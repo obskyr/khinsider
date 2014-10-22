@@ -18,7 +18,7 @@ Carefully put together by [@obskyr](http://twitter.com/obskyr)!
 ## Usage
 Just run `khinsider.py` from the command line with the sole parameter being the soundtrack you want to download. Easy!
 
-You're going to need [Python 2](https://www.python.org/downloads/), so install that (and [add it to your path](http://superuser.com/a/143121)) if you haven't already.
+You're going to need [Python 2](https://www.python.org/downloads/), so install that (and [add it to your path](http://superuser.com/a/143121)) if you haven't already. Download for `khinsider.py` is on the right of this GitHub page - click "Download ZIP"!
 
 ## As a module
 Here are the functions you will be using:
@@ -34,7 +34,7 @@ Search khinsider for `term`. Return a list of soundtrack IDs matching the search
 # Talk to me!
 You can easily get to me by:
 
-* [Twitter (@obskyr)](http://twitter.com/obskyr/)
-* [E-mail](mailto:powpowd@gmail.com)
+* [@obskyr](http://twitter.com/obskyr/) on Twitter!
+* [E-mail](mailto:powpowd@gmail.com) me!
 
 I'd love to hear it if you like `khinsider.py`! If there's a problem, or you'd like a new feature, submit an issue here on GitHub.
