@@ -13,6 +13,8 @@ khinsider.download('jumping-flash')
 # And bam, you've got the Jumping Flash soundtrack!
 ```
 
+Carefully put together by [@obskyr](http://twitter.com/obskyr)!
+
 ## Usage
 Just run `khinsider.py` from the command line with the sole parameter being the soundtrack you want to download. Easy!
 
@@ -28,3 +30,11 @@ If `path` is specified, the soundtrack files will be downloaded to that path. If
 
 ###`khinsider.search(term)`
 Search khinsider for `term`. Return a list of soundtrack IDs matching the search term.
+
+# Talk to me!
+You can easily get to me by:
+
+* [Twitter (@obskyr)](http://twitter.com/obskyr/)
+* [E-mail](mailto:powpowd@gmail.com)
+
+I'd love to hear it if you like `khinsider.py`! If there's a problem, or you'd like a new feature, submit an issue here on GitHub.
