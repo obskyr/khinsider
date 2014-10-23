@@ -81,32 +81,32 @@ def search(term):
 
 # --- And now for the execution. ---
 
-def doIt(): # Only in a function to be able to stop after errors, really.
-    try:
-        ostName = sys.argv[1]
-    except IndexError:
-        print "No soundtrack specified! As the first parameter, use the name the soundtrack uses in its URL."
-        return
-
-    if not os.path.isdir(ostName):
-        os.mkdir(ostName)
-        madeDir = True
-
-    try:
-        download(ostName, ostName, verbose=True)
-    except IndexError:
-        searchResults = search(ostName)
-        print "The soundtrack \"" + ostName + "\" does not seem to exist."
-
-        if searchResults: # aww yeah we gon' do some searchin'
-            print
-            print "These exist, though:"
-            for name in searchResults:
-                print name
-
-        if madeDir:
-            os.rmdir(ostName)
-        return
-
 if __name__ == '__main__':
+    def doIt(): # Only in a function to be able to stop after errors, really.
+        try:
+            ostName = sys.argv[1]
+        except IndexError:
+            print "No soundtrack specified! As the first parameter, use the name the soundtrack uses in its URL."
+            return
+
+        if not os.path.isdir(ostName):
+            os.mkdir(ostName)
+            madeDir = True
+
+        try:
+            download(ostName, ostName, verbose=True)
+        except IndexError:
+            searchResults = search(ostName)
+            print "The soundtrack \"" + ostName + "\" does not seem to exist."
+
+            if searchResults: # aww yeah we gon' do some searchin'
+                print
+                print "These exist, though:"
+                for name in searchResults:
+                    print name
+
+            if madeDir:
+                os.rmdir(ostName)
+            return
+
     doIt()
