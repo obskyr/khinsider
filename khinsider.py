@@ -3,6 +3,55 @@
 
 # A script to download full soundtracks from khinsider.
 
+# --- Install prerequisites---
+
+# (This section in `if __name__ == '__main__':` is entirely unrelated to the
+# rest of the module, and doesn't even run if the module isn't run by itself.)
+
+if __name__ == '__main__':
+    import imp # To check modules without importing them.
+
+    requiredModules = [
+        ['requests', 'requests'], # Some modules don't have the same pypi name as
+        ['bs4', 'beautifulsoup4']  # import name. Therefore, two entries per module.
+    ]
+
+    def moduleExists(module):
+        try:
+            imp.find_module(module[0])
+        except ImportError:
+            return False
+        return True
+    def neededInstalls(requiredModules=requiredModules):
+        uninstalledModules = []
+        for module in requiredModules:
+            if not moduleExists(module):
+                uninstalledModules.append(module)
+        return uninstalledModules
+
+    def install(package):
+        pip.main(['install', '--quiet', package])
+    def installModules(modules, verbose=True):
+        for module in modules:
+            if verbose:
+                print "Installing " + module[1] + "..."
+            install(module[1])
+    def installRequiredModules(needed=None, verbose=True):
+        needed = neededInstalls() if needed is None else needed
+        installModules(neededInstalls(), verbose)
+
+    needed = neededInstalls()
+    if needed: # Only import pip if modules are actually missing.
+        try:
+            import pip # To install modules if they're not there.
+        except ImportError:
+            print "You don't seem to have pip installed!"
+            print "Get it from https://pip.readthedocs.org/en/latest/installing.html"
+
+    installRequiredModules(needed)
+
+# ------
+
 import requests
 from bs4 import BeautifulSoup
 
