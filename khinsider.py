@@ -13,7 +13,7 @@ if __name__ == '__main__':
 
     requiredModules = [
         ['requests', 'requests'], # Some modules don't have the same pypi name as
-        ['bs4', 'beautifulsoup4']  # import name. Therefore, two entries per module.
+        ['bs4', 'beautifulsoup4'] # import name. Therefore, two entries per module.
     ]
 
     def moduleExists(module):
@@ -82,12 +82,14 @@ def getSongPageUrlList(ostName):
     return urls
 
 def getSongList(ostName):
+    """Get a list of songs from the OST with ID `ostName`."""
     # Each entry is in the format [name, url].
     songPageUrls = getSongPageUrlList(ostName)
     songList = [getSongInfo(url) for url in songPageUrls]
     return songList
 
 def getSongInfo(songPageUrl):
+    """Get the file name and URL of the song at `songPageUrl`. Return a list of [songName, songUrl]."""
     info = []
     soup = getSoup(songPageUrl)
     info.append(getSongName(soup))
@@ -101,10 +103,12 @@ def getSongUrl(songPage):
     return url
 
 def download(ostName, path="", verbose=False):
+    """Download an OST with the ID `ostName` to `path`."""
     songInfos = getSongList(ostName)
     for name, url in songInfos:
         downloadSong(url, path, name, verbose)
-def downloadSong(songUrl, path, name, verbose=False):
+def downloadSong(songUrl, path, name="song", verbose=False):
+    """Download a single song at `songUrl` to `path`."""
     if verbose:
         print "Downloading " + name + "..."
 
@@ -121,6 +125,7 @@ def downloadSong(songUrl, path, name, verbose=False):
             print "Couldn't save " + name + ". Check your permissions."
 
 def search(term):
+    """Return a list of OST IDs for the search term `term`."""
     r = requests.get("http://downloads.khinsider.com/search", params={'search': term})
     soup = BeautifulSoup(r.text)
     anchors = soup('p')[1]('a')
