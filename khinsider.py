@@ -141,14 +141,19 @@ if __name__ == '__main__':
             ostName = sys.argv[1]
         except IndexError:
             print "No soundtrack specified! As the first parameter, use the name the soundtrack uses in its URL."
+            print "If you want to, you can also specify an output directory as the second parameter."
             return
+        try:
+            outPath = sys.argv[2]
+        except IndexError:
+            outPath = ostName
 
         if not os.path.isdir(ostName):
             os.mkdir(ostName)
             madeDir = True
 
         try:
-            download(ostName, ostName, verbose=True)
+            download(ostName, outPath, verbose=True)
         except IndexError:
             searchResults = search(ostName)
             print "The soundtrack \"" + ostName + "\" does not seem to exist."

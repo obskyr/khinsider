@@ -18,6 +18,8 @@ Carefully put together by [@obskyr](http://twitter.com/obskyr)!
 ## Usage
 Just run `khinsider.py` from the command line with the sole parameter being the soundtrack you want to download. Easy!
 
+If you want, you can also add another parameter as the output folder, but that's optional.
+
 You're going to need [Python 2](https://www.python.org/downloads/), so install that (and [add it to your path](http://superuser.com/a/143121)) if you haven't already.
 
 You will also need to have [pip](https://pip.readthedocs.org/en/latest/installing.html) installed (download `get-pip.py` and run it) if you don't already have [requests](https://pypi.python.org/pypi/requests) and [Beautiful Soup 4](https://pypi.python.org/pypi/beautifulsoup4). The first time `khinsider.py` runs, it will install these two for you.
