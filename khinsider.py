@@ -71,6 +71,7 @@ def getSoup(url):
 
 def getOstSoup(ostName):
     url = "http://downloads.khinsider.com/game-soundtracks/album/" + ostName
+
     return getSoup(url)
 
 def getSongPageUrlList(ostName):
@@ -104,6 +105,8 @@ def getSongUrl(songPage):
 
 def download(ostName, path="", verbose=False):
     """Download an OST with the ID `ostName` to `path`."""
+    if verbose:
+        print "Getting song list..."
     songInfos = getSongList(ostName)
     for name, url in songInfos:
         downloadSong(url, path, name, verbose)
@@ -112,11 +115,20 @@ def downloadSong(songUrl, path, name="song", verbose=False):
     if verbose:
         print "Downloading " + name + "..."
 
-    try:
-        song = requests.get(songUrl)
-    except ConnectionError:
+    tries = 0
+    while tries < 3:
+        try:
+            if tries and verbose:
+                print "Couldn't download " + name + ". Trying again..."
+            song = requests.get(songUrl)
+            break
+        except requests.ConnectionError:
+            tries += 1
+    else:
         if verbose:
-            print "Couldn't download " + name + "."
+            print "Couldn't download " + name + ". Skipping over."
+        return
+
     try:
         with open(os.path.join(path, name), 'wb') as outfile:
             outfile.write(song.content)
@@ -142,12 +154,14 @@ if __name__ == '__main__':
         except IndexError:
             print "No soundtrack specified! As the first parameter, use the name the soundtrack uses in its URL."
             print "If you want to, you can also specify an output directory as the second parameter."
+            print "You can also search for soundtracks by using your search term as parameter - as long as it's not an existing soundtrack."
             return
         try:
             outPath = sys.argv[2]
         except IndexError:
             outPath = ostName
 
+        madeDir = False
         if not os.path.isdir(ostName):
             os.mkdir(ostName)
             madeDir = True
@@ -155,7 +169,7 @@ if __name__ == '__main__':
         try:
             download(ostName, outPath, verbose=True)
         except IndexError:
-            searchResults = search(ostName)
+            searchResults = search(' '.join(sys.argv[1:]))
             print "The soundtrack \"" + ostName + "\" does not seem to exist."
 
             if searchResults: # aww yeah we gon' do some searchin'
@@ -163,6 +177,13 @@ if __name__ == '__main__':
                 print "These exist, though:"
                 for name in searchResults:
                     print name
+
+            if madeDir:
+                os.rmdir(ostName)
+            return
+        except requests.ConnectionError:
+            print "Could not connect to KHInsider."
+            print "Make sure you have a working internet connection."
 
             if madeDir:
                 os.rmdir(ostName)
