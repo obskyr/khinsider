@@ -69,10 +69,23 @@ def getSoup(url):
 
     return BeautifulSoup(re.sub(removeRe, '', r.text))
 
+class NonexistentSoundtrackError(Exception):
+    def __init__(self, ostName=""):
+        super(NonexistentSoundtrackError, self).__init__(ostName)
+        self.ostName = ostName
+    def __str__(self):
+        if not self.ostName or len(self.ostName) > 80:
+            s = "The soundtrack does not exist."
+        else:
+            s = "The soundtrack \"{ost}\" does not exist.".format(ost=self.ostName)
+        return s
+
 def getOstSoup(ostName):
     url = "http://downloads.khinsider.com/game-soundtracks/album/" + ostName
-
-    return getSoup(url)
+    soup = getSoup(url)
+    if soup.find(id='EchoTopic').find('p').string == "No such album":
+        raise NonexistentSoundtrackError(ostName)
+    return soup
 
 def getSongPageUrlList(ostName):
     soup = getOstSoup(ostName)
@@ -109,14 +122,14 @@ def download(ostName, path="", verbose=False):
         print "Getting song list..."
     songInfos = getSongList(ostName)
     for name, url in songInfos:
-        downloadSong(url, path, name, verbose)
-def downloadSong(songUrl, path, name="song", verbose=False):
+        downloadSong(url, path, name, verbose=verbose)
+def downloadSong(songUrl, path, name="song", numTries=3, verbose=False):
     """Download a single song at `songUrl` to `path`."""
     if verbose:
         print "Downloading " + name + "..."
 
     tries = 0
-    while tries < 3:
+    while tries < numTries:
         try:
             if tries and verbose:
                 print "Couldn't download " + name + ". Trying again..."
@@ -168,7 +181,7 @@ if __name__ == '__main__':
 
         try:
             download(ostName, outPath, verbose=True)
-        except IndexError:
+        except NonexistentSoundtrackError:
             searchResults = search(' '.join(sys.argv[1:]))
             print "The soundtrack \"" + ostName + "\" does not seem to exist."
 
