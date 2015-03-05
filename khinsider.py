@@ -84,6 +84,8 @@ def getOstSoup(ostName):
     url = "http://downloads.khinsider.com/game-soundtracks/album/" + ostName
     soup = getSoup(url)
     if soup.find(id='EchoTopic').find('p').string == "No such album":
+        # The EchoTopic and p exist even if the soundtrack doesn't, so no
+        # need for error handling here.
         raise NonexistentSoundtrackError(ostName)
     return soup
 
@@ -183,6 +185,7 @@ if __name__ == '__main__':
             download(ostName, outPath, verbose=True)
         except NonexistentSoundtrackError:
             searchResults = search(' '.join(sys.argv[1:]))
+            print
             print "The soundtrack \"{}\" does not seem to exist.".format(ostName)
 
             if searchResults: # aww yeah we gon' do some searchin'
