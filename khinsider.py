@@ -177,16 +177,15 @@ if __name__ == '__main__':
             outPath = ostName
 
         madeDir = False
-        if not os.path.isdir(ostName):
-            os.mkdir(ostName)
+        if not os.path.isdir(outPath):
+            os.mkdir(outPath)
             madeDir = True
 
         try:
             download(ostName, outPath, verbose=True)
         except NonexistentSoundtrackError:
             searchResults = search(' '.join(sys.argv[1:]))
-            print
-            print "The soundtrack \"{}\" does not seem to exist.".format(ostName)
+            print "\nThe soundtrack \"{}\" does not seem to exist.".format(ostName)
 
             if searchResults: # aww yeah we gon' do some searchin'
                 print
@@ -195,14 +194,14 @@ if __name__ == '__main__':
                     print name
 
             if madeDir:
-                os.rmdir(ostName)
+                os.rmdir(outPath)
             return
         except requests.ConnectionError:
             print "Could not connect to KHInsider."
             print "Make sure you have a working internet connection."
 
             if madeDir:
-                os.rmdir(ostName)
+                os.rmdir(outPath)
             return
 
     doIt()
