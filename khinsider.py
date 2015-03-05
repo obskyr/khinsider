@@ -34,7 +34,7 @@ if __name__ == '__main__':
     def installModules(modules, verbose=True):
         for module in modules:
             if verbose:
-                print "Installing " + module[1] + "..."
+                print "Installing {}...".format(module[1])
             install(module[1])
     def installRequiredModules(needed=None, verbose=True):
         needed = neededInstalls() if needed is None else needed
@@ -126,20 +126,20 @@ def download(ostName, path="", verbose=False):
 def downloadSong(songUrl, path, name="song", numTries=3, verbose=False):
     """Download a single song at `songUrl` to `path`."""
     if verbose:
-        print "Downloading " + name + "..."
+        print "Downloading {}...".format(name)
 
     tries = 0
     while tries < numTries:
         try:
             if tries and verbose:
-                print "Couldn't download " + name + ". Trying again..."
+                print "Couldn't download {}. Trying again...".format(name)
             song = requests.get(songUrl)
             break
         except requests.ConnectionError:
             tries += 1
     else:
         if verbose:
-            print "Couldn't download " + name + ". Skipping over."
+            print "Couldn't download {}. Skipping over.".format(name)
         return
 
     try:
@@ -147,7 +147,7 @@ def downloadSong(songUrl, path, name="song", numTries=3, verbose=False):
             outfile.write(song.content)
     except IOError:
         if verbose:
-            print "Couldn't save " + name + ". Check your permissions."
+            print "Couldn't save {}. Check your permissions.".format(name)
 
 def search(term):
     """Return a list of OST IDs for the search term `term`."""
@@ -183,7 +183,7 @@ if __name__ == '__main__':
             download(ostName, outPath, verbose=True)
         except NonexistentSoundtrackError:
             searchResults = search(' '.join(sys.argv[1:]))
-            print "The soundtrack \"" + ostName + "\" does not seem to exist."
+            print "The soundtrack \"{}\" does not seem to exist.".format(ostName)
 
             if searchResults: # aww yeah we gon' do some searchin'
                 print
