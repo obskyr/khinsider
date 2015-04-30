@@ -184,7 +184,7 @@ if __name__ == '__main__':
         try:
             download(ostName, outPath, verbose=True)
         except NonexistentSoundtrackError:
-            searchResults = search(' '.join(sys.argv[1:]))
+            searchResults = search(' '.join(sys.argv[1:]).replace('-', ' '))
             print "\nThe soundtrack \"{}\" does not seem to exist.".format(ostName)
 
             if searchResults: # aww yeah we gon' do some searchin'
