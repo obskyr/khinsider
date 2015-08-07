@@ -34,7 +34,7 @@ if __name__ == '__main__':
     def installModules(modules, verbose=True):
         for module in modules:
             if verbose:
-                print(u"Installing {}...".encode('utf-8').format(module[1].encode('utf-8')))
+                print(u"Installing {}...".format(module[1]))
             install(module[1])
     def installRequiredModules(needed=None, verbose=True):
         needed = neededInstalls() if needed is None else needed
@@ -45,8 +45,8 @@ if __name__ == '__main__':
         try:
             import pip # To install modules if they're not there.
         except ImportError:
-            print(u"You don't seem to have pip installed!".encode('utf-8'))
-            print(u"Get it from https://pip.readthedocs.org/en/latest/installing.html".encode('utf-8'))
+            print(u"You don't seem to have pip installed!")
+            print(u"Get it from https://pip.readthedocs.org/en/latest/installing.html")
 
     installRequiredModules(needed)
 
@@ -70,20 +70,20 @@ def getSoup(url):
     return BeautifulSoup(re.sub(removeRe, '', r.text))
 
 class NonexistentSoundtrackError(Exception):
-    def __init__(self, ostName=u"".encode('utf-8')):
+    def __init__(self, ostName=u""):
         super(NonexistentSoundtrackError, self).__init__(ostName)
         self.ostName = ostName
     def __str__(self):
         if not self.ostName or len(self.ostName) > 80:
-            s = u"The soundtrack does not exist.".encode('utf-8')
+            s = u"The soundtrack does not exist."
         else:
-            s = u"The soundtrack \"{ost}\" does not exist.".encode('utf-8').format(ost=self.ostName.encode('utf-8'))
+            s = u"The soundtrack \"{ost}\" does not exist.".format(ost=self.ostName)
         return s
 
 def getOstSoup(ostName):
-    url = u"http://downloads.khinsider.com/game-soundtracks/album/".encode('utf-8') + ostName.encode('utf-8')
+    url = u"http://downloads.khinsider.com/game-soundtracks/album/" + ostName
     soup = getSoup(url)
-    if soup.find(id='EchoTopic').find('p').string == u"No such album".encode('utf-8'):
+    if soup.find(id='EchoTopic').find('p').string == u"No such album":
         # The EchoTopic and p exist even if the soundtrack doesn't, so no
         # need for error handling here.
         raise NonexistentSoundtrackError(ostName)
@@ -118,30 +118,30 @@ def getSongUrl(songPage):
     url = songPage('p')[3].find('a')['href'] # Download link.
     return url
 
-def download(ostName, path=u"".encode('utf-8'), verbose=False):
+def download(ostName, path=u"", verbose=False):
     """Download an OST with the ID `ostName` to `path`."""
     if verbose:
-        print(u"Getting song list...".encode('utf-8'))
+        print(u"Getting song list...")
     songInfos = getSongList(ostName)
     for name, url in songInfos:
         downloadSong(url, path, name, verbose=verbose)
 def downloadSong(songUrl, path, name=u"song", numTries=3, verbose=False):
     """Download a single song at `songUrl` to `path`."""
     if verbose:
-        print(u"Downloading {}...".encode('utf-8').format(name.encode('utf-8')))
+        print(u"Downloading {}...".format(name))
 
     tries = 0
     while tries < numTries:
         try:
             if tries and verbose:
-                print(u"Couldn't download {}. Trying again...".encode('utf-8').format(name.encode('utf-8')))
+                print(u"Couldn't download {}. Trying again...".format(name))
             song = requests.get(songUrl)
             break
         except requests.ConnectionError:
             tries += 1
     else:
         if verbose:
-            print(u"Couldn't download {}. Skipping over.".encode('utf-8').format(name.encode('utf-8')))
+            print(u"Couldn't download {}. Skipping over.".format(name))
         return
 
     try:
@@ -149,7 +149,7 @@ def downloadSong(songUrl, path, name=u"song", numTries=3, verbose=False):
             outfile.write(song.content)
     except IOError:
         if verbose:
-            print(u"Couldn't save {}. Check your permissions.".encode('utf-8').format(name.encode('utf-8')))
+            print(u"Couldn't save {}. Check your permissions.".format(name))
 
 def search(term):
     """Return a list of OST IDs for the search term `term`."""
@@ -167,9 +167,9 @@ if __name__ == '__main__':
         try:
             ostName = sys.argv[1]
         except IndexError:
-            print(u"No soundtrack specified! As the first parameter, use the name the soundtrack uses in its URL.".encode('utf-8'))
-            print(u"If you want to, you can also specify an output directory as the second parameter.".encode('utf-8'))
-            print(u"You can also search for soundtracks by using your search term as parameter - as long as it's not an existing soundtrack.".encode('utf-8'))
+            print(u"No soundtrack specified! As the first parameter, use the name the soundtrack uses in its URL.")
+            print(u"If you want to, you can also specify an output directory as the second parameter.")
+            print(u"You can also search for soundtracks by using your search term as parameter - as long as it's not an existing soundtrack.")
             return
         try:
             outPath = sys.argv[2]
@@ -185,20 +185,20 @@ if __name__ == '__main__':
             download(ostName, outPath, verbose=True)
         except NonexistentSoundtrackError:
             searchResults = search(' '.join(sys.argv[1:]).replace('-', ' '))
-            print(u"\nThe soundtrack \"{}\" does not seem to exist.".encode('utf-8').format(ostName.encode('utf-8')))
+            print(u"\nThe soundtrack \"{}\" does not seem to exist.".format(ostName))
 
             if searchResults: # aww yeah we gon' do some searchin'
                 print()
-                print(u"These exist, though:".encode('utf-8'))
+                print(u"These exist, though:")
                 for name in searchResults:
-                    print(name.encode('utf-8'))
+                    print(name)
 
             if madeDir:
                 os.rmdir(outPath)
             return
         except requests.ConnectionError:
-            print(u"Could not connect to KHInsider.".encode('utf-8'))
-            print(u"Make sure you have a working internet connection.".encode('utf-8'))
+            print(u"Could not connect to KHInsider.")
+            print(u"Make sure you have a working internet connection.")
 
             if madeDir:
                 os.rmdir(outPath)
