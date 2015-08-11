@@ -75,13 +75,13 @@ class NonexistentSoundtrackError(Exception):
         self.ostName = ostName
     def __str__(self):
         if not self.ostName or len(self.ostName) > 80:
-            s = "The soundtrack does not exist."
+            s = u"The soundtrack does not exist."
         else:
-            s = "The soundtrack \"{ost}\" does not exist.".format(ost=self.ostName)
+            s = u"The soundtrack \"{ost}\" does not exist.".format(ost=self.ostName)
         return s
 
 def getOstSoup(ostName):
-    url = "http://downloads.khinsider.com/game-soundtracks/album/" + ostName
+    url = u"http://downloads.khinsider.com/game-soundtracks/album/" + ostName
     soup = getSoup(url)
     if soup.find(id='EchoTopic').find('p').string == "No such album":
         # The EchoTopic and p exist even if the soundtrack doesn't, so no
@@ -129,7 +129,7 @@ def downloadSong(songUrl, path, name="song", numTries=3, verbose=False):
     """Download a single song at `songUrl` to `path`."""
     if verbose:
         print "Downloading {}...".format(name)
-
+    
     tries = 0
     while tries < numTries:
         try:
@@ -157,7 +157,7 @@ def search(term):
     soup = BeautifulSoup(r.text)
     anchors = soup('p')[1]('a')
     ostNames = [a['href'].split('/')[-1] for a in anchors]
-
+    
     return ostNames
 
 # --- And now for the execution. ---
@@ -165,7 +165,7 @@ def search(term):
 if __name__ == '__main__':
     def doIt(): # Only in a function to be able to stop after errors, really.
         try:
-            ostName = sys.argv[1]
+            ostName = sys.argv[1].decode(sys.getfilesystemencoding())
         except IndexError:
             print "No soundtrack specified! As the first parameter, use the name the soundtrack uses in its URL."
             print "If you want to, you can also specify an output directory as the second parameter."
@@ -184,8 +184,12 @@ if __name__ == '__main__':
         try:
             download(ostName, outPath, verbose=True)
         except NonexistentSoundtrackError:
-            searchResults = search(' '.join(sys.argv[1:]).replace('-', ' '))
-            print "\nThe soundtrack \"{}\" does not seem to exist.".format(ostName)
+            searchResults = search(
+                ' '.join([a.decode(sys.getfilesystemencoding())
+                    for a in sys.argv[1:]
+                ]).replace('-', ' ')
+            )
+            print u"\nThe soundtrack \"{}\" does not seem to exist.".format(ostName)
 
             if searchResults: # aww yeah we gon' do some searchin'
                 print
