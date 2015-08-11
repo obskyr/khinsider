@@ -67,7 +67,7 @@ def getSoup(url):
     removeRe = re.compile(r"^</td>\s*$", re.MULTILINE)
     # ---
 
-    return BeautifulSoup(re.sub(removeRe, '', r.text))
+    return BeautifulSoup(re.sub(removeRe, '', r.content))
 
 class NonexistentSoundtrackError(Exception):
     def __init__(self, ostName=""):
@@ -128,20 +128,20 @@ def download(ostName, path="", verbose=False):
 def downloadSong(songUrl, path, name="song", numTries=3, verbose=False):
     """Download a single song at `songUrl` to `path`."""
     if verbose:
-        print "Downloading {}...".format(name)
+        print u"Downloading {}...".format(name)
     
     tries = 0
     while tries < numTries:
         try:
             if tries and verbose:
-                print "Couldn't download {}. Trying again...".format(name)
+                print u"Couldn't download {}. Trying again...".format(name)
             song = requests.get(songUrl)
             break
         except requests.ConnectionError:
             tries += 1
     else:
         if verbose:
-            print "Couldn't download {}. Skipping over.".format(name)
+            print u"Couldn't download {}. Skipping over.".format(name)
         return
 
     try:
@@ -149,7 +149,7 @@ def downloadSong(songUrl, path, name="song", numTries=3, verbose=False):
             outfile.write(song.content)
     except IOError:
         if verbose:
-            print "Couldn't save {}. Check your permissions.".format(name)
+            print u"Couldn't save {}. Check your permissions.".format(name)
 
 def search(term):
     """Return a list of OST IDs for the search term `term`."""
