@@ -3,6 +3,9 @@
 
 # A script to download full soundtracks from khinsider.
 
+# __future__ import for forwards compatibility with Python 3
+from __future__ import print_function
+
 # --- Install prerequisites---
 
 # (This section in `if __name__ == '__main__':` is entirely unrelated to the
@@ -34,7 +37,7 @@ if __name__ == '__main__':
     def installModules(modules, verbose=True):
         for module in modules:
             if verbose:
-                print "Installing {}...".format(module[1])
+                print("Installing {}...".format(module[1]))
             install(module[1])
     def installRequiredModules(needed=None, verbose=True):
         needed = neededInstalls() if needed is None else needed
@@ -45,8 +48,8 @@ if __name__ == '__main__':
         try:
             import pip # To install modules if they're not there.
         except ImportError:
-            print "You don't seem to have pip installed!"
-            print "Get it from https://pip.readthedocs.org/en/latest/installing.html"
+            print("You don't seem to have pip installed!")
+            print("Get it from https://pip.readthedocs.org/en/latest/installing.html")
 
     installRequiredModules(needed)
 
@@ -75,7 +78,7 @@ class NonexistentSoundtrackError(Exception):
         self.ostName = ostName
     def __str__(self):
         if not self.ostName or len(self.ostName) > 80:
-            s = u"The soundtrack does not exist."
+            s = "The soundtrack does not exist."
         else:
             s = u"The soundtrack \"{ost}\" does not exist.".format(ost=self.ostName)
         return s
@@ -121,27 +124,27 @@ def getSongUrl(songPage):
 def download(ostName, path="", verbose=False):
     """Download an OST with the ID `ostName` to `path`."""
     if verbose:
-        print "Getting song list..."
+        print("Getting song list...")
     songInfos = getSongList(ostName)
     for name, url in songInfos:
         downloadSong(url, path, name, verbose=verbose)
 def downloadSong(songUrl, path, name="song", numTries=3, verbose=False):
     """Download a single song at `songUrl` to `path`."""
     if verbose:
-        print u"Downloading {}...".format(name)
-    
+        print(u"Downloading {}...".format(name))
+
     tries = 0
     while tries < numTries:
         try:
             if tries and verbose:
-                print u"Couldn't download {}. Trying again...".format(name)
+                print(u"Couldn't download {}. Trying again...".format(name))
             song = requests.get(songUrl)
             break
         except requests.ConnectionError:
             tries += 1
     else:
         if verbose:
-            print u"Couldn't download {}. Skipping over.".format(name)
+            print(u"Couldn't download {}. Skipping over.".format(name))
         return
 
     try:
@@ -149,7 +152,7 @@ def downloadSong(songUrl, path, name="song", numTries=3, verbose=False):
             outfile.write(song.content)
     except IOError:
         if verbose:
-            print u"Couldn't save {}. Check your permissions.".format(name)
+            print(u"Couldn't save {}. Check your permissions.".format(name))
 
 def search(term):
     """Return a list of OST IDs for the search term `term`."""
@@ -157,7 +160,7 @@ def search(term):
     soup = BeautifulSoup(r.text)
     anchors = soup('p')[1]('a')
     ostNames = [a['href'].split('/')[-1] for a in anchors]
-    
+
     return ostNames
 
 # --- And now for the execution. ---
@@ -167,9 +170,9 @@ if __name__ == '__main__':
         try:
             ostName = sys.argv[1].decode(sys.getfilesystemencoding())
         except IndexError:
-            print "No soundtrack specified! As the first parameter, use the name the soundtrack uses in its URL."
-            print "If you want to, you can also specify an output directory as the second parameter."
-            print "You can also search for soundtracks by using your search term as parameter - as long as it's not an existing soundtrack."
+            print("No soundtrack specified! As the first parameter, use the name the soundtrack uses in its URL.")
+            print("If you want to, you can also specify an output directory as the second parameter.")
+            print("You can also search for soundtracks by using your search term as parameter - as long as it's not an existing soundtrack.")
             return
         try:
             outPath = sys.argv[2]
@@ -189,20 +192,20 @@ if __name__ == '__main__':
                     for a in sys.argv[1:]
                 ]).replace('-', ' ')
             )
-            print u"\nThe soundtrack \"{}\" does not seem to exist.".format(ostName)
+            print(u"\nThe soundtrack \"{}\" does not seem to exist.".format(ostName))
 
             if searchResults: # aww yeah we gon' do some searchin'
-                print
-                print "These exist, though:"
+                print()
+                print("These exist, though:")
                 for name in searchResults:
-                    print name
+                    print(name)
 
             if madeDir:
                 os.rmdir(outPath)
             return
         except requests.ConnectionError:
-            print "Could not connect to KHInsider."
-            print "Make sure you have a working internet connection."
+            print("Could not connect to KHInsider.")
+            print("Make sure you have a working internet connection.")
 
             if madeDir:
                 os.rmdir(outPath)
