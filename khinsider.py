@@ -63,14 +63,14 @@ import os
 
 import re # For the syntax error in the HTML.
 
-def getSoup(url):
-    r = requests.get(url)
+def getSoup(*args, **kwargs):
+    r = requests.get(*args, **kwargs)
 
     # --- Fix errors in khinsider's HTML
     removeRe = re.compile(br"^</td>\s*$", re.MULTILINE)
     # ---
     
-    return BeautifulSoup(re.sub(removeRe, b'', r.content))
+    return BeautifulSoup(re.sub(removeRe, b'', r.content), 'html.parser')
 
 class NonexistentSoundtrackError(Exception):
     def __init__(self, ostName=""):
@@ -156,8 +156,7 @@ def downloadSong(songUrl, path, name="song", numTries=3, verbose=False):
 
 def search(term):
     """Return a list of OST IDs for the search term `term`."""
-    r = requests.get("http://downloads.khinsider.com/search", params={'search': term})
-    soup = BeautifulSoup(r.text)
+    soup = getSoup("http://downloads.khinsider.com/search", params={'search': term})
     anchors = soup('p')[1]('a')
     ostNames = [a['href'].split('/')[-1] for a in anchors]
 
