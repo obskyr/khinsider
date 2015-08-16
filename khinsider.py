@@ -67,10 +67,10 @@ def getSoup(url):
     r = requests.get(url)
 
     # --- Fix errors in khinsider's HTML
-    removeRe = re.compile(r"^</td>\s*$", re.MULTILINE)
+    removeRe = re.compile(br"^</td>\s*$", re.MULTILINE)
     # ---
-
-    return BeautifulSoup(re.sub(removeRe, '', r.content))
+    
+    return BeautifulSoup(re.sub(removeRe, b'', r.content))
 
 class NonexistentSoundtrackError(Exception):
     def __init__(self, ostName=""):
@@ -169,6 +169,8 @@ if __name__ == '__main__':
     def doIt(): # Only in a function to be able to stop after errors, really.
         try:
             ostName = sys.argv[1].decode(sys.getfilesystemencoding())
+        except AttributeError: # Python 3 doesn't have str.encode.
+            ostName = sys.argv[1]
         except IndexError:
             print("No soundtrack specified! As the first parameter, use the name the soundtrack uses in its URL.")
             print("If you want to, you can also specify an output directory as the second parameter.")
@@ -187,11 +189,14 @@ if __name__ == '__main__':
         try:
             download(ostName, outPath, verbose=True)
         except NonexistentSoundtrackError:
-            searchResults = search(
-                ' '.join([a.decode(sys.getfilesystemencoding())
+            try:
+                searchTerm = ' '.join([a.decode(sys.getfilesystemencoding())
                     for a in sys.argv[1:]
                 ]).replace('-', ' ')
-            )
+            except AttributeError: # Python 3, again
+                searchTerm = ' '.join(sys.argv[1:]).replace('-', ' ')
+            
+            searchResults = search(searchTerm)
             print(u"\nThe soundtrack \"{}\" does not seem to exist.".format(ostName))
 
             if searchResults: # aww yeah we gon' do some searchin'
