@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# A script to download full soundtracks from khinsider.
+# A script to download full soundtracks from KHInsider.
 
 # __future__ import for forwards compatibility with Python 3
 from __future__ import print_function

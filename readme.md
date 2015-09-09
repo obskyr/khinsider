@@ -22,7 +22,7 @@ If you want, you can also add another parameter as the output folder, but that's
 
 If you don't want to go to the actual site to look for soundtracks, you can also just type a search term as the first parameter(s), and provided it's not a valid soundtrack, `khinsider.py` ill give you a list of soundtracks matching that term.
 
-You're going to need [Python 2](https://www.python.org/downloads/), so install that (and [add it to your path](http://superuser.com/a/143121)) if you haven't already.
+You're going to need [Python](https://www.python.org/downloads/) (2 or 3 - `khinsider.py` works with both), so install that (and [add it to your path](http://superuser.com/a/143121)) if you haven't already.
 
 You will also need to have [pip](https://pip.readthedocs.org/en/latest/installing.html) installed (download `get-pip.py` and run it) if you don't already have [requests](https://pypi.python.org/pypi/requests) and [Beautiful Soup 4](https://pypi.python.org/pypi/beautifulsoup4). The first time `khinsider.py` runs, it will install these two for you.
 
