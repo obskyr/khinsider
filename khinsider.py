@@ -132,20 +132,23 @@ def download(ostName, path="", verbose=False):
 def downloadSong(songUrl, path, name="song", numTries=3, verbose=False):
     """Download a single song at `songUrl` to `path`."""
     if verbose:
-        print("Downloading {}...".format(name))
+        print("Downloading {}...".format(name).encode(
+            sys.stdout.encoding, 'replace'))
 
     tries = 0
     while tries < numTries:
         try:
             if tries and verbose:
-                print("Couldn't download {}. Trying again...".format(name))
+                print("Couldn't download {}. Trying again...".format(
+                    name).encode(sys.stdout.encoding, 'replace'))
             song = requests.get(songUrl)
             break
         except requests.ConnectionError:
             tries += 1
     else:
         if verbose:
-            print("Couldn't download {}. Skipping over.".format(name))
+            print("Couldn't download {}. Skipping over.".format(
+                name).encode(sys.stdout.encoding, 'replace'))
         return
 
     try:
@@ -153,7 +156,8 @@ def downloadSong(songUrl, path, name="song", numTries=3, verbose=False):
             outfile.write(song.content)
     except IOError:
         if verbose:
-            print("Couldn't save {}. Check your permissions.".format(name))
+            print("Couldn't save {}. Check your permissions.".format(
+                name).encode(sys.stdout.encoding, 'replace'))
 
 def search(term):
     """Return a list of OST IDs for the search term `term`."""
@@ -197,7 +201,10 @@ if __name__ == '__main__':
                 searchTerm = ' '.join(sys.argv[1:]).replace('-', ' ')
             
             searchResults = search(searchTerm)
-            print("\nThe soundtrack \"{}\" does not seem to exist.".format(ostName))
+            # I don't know, maybe in some crazy circumstance the encoding for
+            # arguments doesn't match stdout's encoding.
+            print("\nThe soundtrack \"{}\" does not seem to exist.".format(
+                ostName).encode(sys.stdout.encoding, 'replace'))
 
             if searchResults: # aww yeah we gon' do some searchin'
                 print()
