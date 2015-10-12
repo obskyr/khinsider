@@ -20,7 +20,7 @@ Just run `khinsider.py` from the command line with the sole parameter being the 
 
 If you want, you can also add another parameter as the output folder, but that's optional.
 
-If you don't want to go to the actual site to look for soundtracks, you can also just type a search term as the first parameter(s), and provided it's not a valid soundtrack, `khinsider.py` ill give you a list of soundtracks matching that term.
+If you don't want to go to the actual site to look for soundtracks, you can also just type a search term as the first parameter(s), and provided it's not a valid soundtrack, `khinsider.py` will give you a list of soundtracks matching that term.
 
 You're going to need [Python](https://www.python.org/downloads/) (2 or 3 - `khinsider.py` works with both), so install that (and [add it to your path](http://superuser.com/a/143121)) if you haven't already.
 
