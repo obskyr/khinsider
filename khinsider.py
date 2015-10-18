@@ -64,11 +64,31 @@ import os
 
 import re # For the syntax error in the HTML.
 
+# Different printin' for different Pythons.
+normal_print = print
+def print(*args, **kwargs):
+    if sys.version_info[0] > 2: # Python 3 can't print bytes properly (!?)
+        # This lambda is ACTUALLY a "reasonable"
+        # way to print Unicode in Python 3. What.
+        printEncode = lambda s: s.encode(sys.stdout.encoding,
+            'replace').decode(sys.stdout.encoding)
+        unicodeType = str
+    else:
+        printEncode = lambda s: s.encode(sys.stdout.encoding, 'replace')
+        unicodeType = unicode
+    
+    args = [
+        printEncode(arg)
+        if isinstance(arg, unicodeType) else arg
+        for arg in args
+    ]
+    normal_print(*args, **kwargs)
+
 def getSoup(*args, **kwargs):
     r = requests.get(*args, **kwargs)
 
     # --- Fix errors in khinsider's HTML
-    removeRe = re.compile(r"^</td>\s*$", re.MULTILINE)
+    removeRe = re.compile(br"^</td>\s*$", re.MULTILINE)
     # ---
     
     return BeautifulSoup(re.sub(removeRe, b'', r.content), 'html.parser')
@@ -132,23 +152,20 @@ def download(ostName, path="", verbose=False):
 def downloadSong(songUrl, path, name="song", numTries=3, verbose=False):
     """Download a single song at `songUrl` to `path`."""
     if verbose:
-        print("Downloading {}...".format(name).encode(
-            sys.stdout.encoding, 'replace'))
+        print("Downloading {}...".format(name))
 
     tries = 0
     while tries < numTries:
         try:
             if tries and verbose:
-                print("Couldn't download {}. Trying again...".format(
-                    name).encode(sys.stdout.encoding, 'replace'))
+                print("Couldn't download {}. Trying again...".format(name))
             song = requests.get(songUrl)
             break
         except requests.ConnectionError:
             tries += 1
     else:
         if verbose:
-            print("Couldn't download {}. Skipping over.".format(
-                name).encode(sys.stdout.encoding, 'replace'))
+            print("Couldn't download {}. Skipping over.".format(name))
         return
 
     try:
@@ -156,8 +173,7 @@ def downloadSong(songUrl, path, name="song", numTries=3, verbose=False):
             outfile.write(song.content)
     except IOError:
         if verbose:
-            print("Couldn't save {}. Check your permissions.".format(
-                name).encode(sys.stdout.encoding, 'replace'))
+            print("Couldn't save {}. Check your permissions.".format(name))
 
 def search(term):
     """Return a list of OST IDs for the search term `term`."""
@@ -204,7 +220,7 @@ if __name__ == '__main__':
             # I don't know, maybe in some crazy circumstance the encoding for
             # arguments doesn't match stdout's encoding.
             print("\nThe soundtrack \"{}\" does not seem to exist.".format(
-                ostName).encode(sys.stdout.encoding, 'replace'))
+                ostName))
 
             if searchResults: # aww yeah we gon' do some searchin'
                 print()
