@@ -38,7 +38,7 @@ if __name__ == '__main__':
     def installModules(modules, verbose=True):
         for module in modules:
             if verbose:
-                print("Installing {}...".format(module[1]))
+                print("Installing {}...".format(module[1]).decode())
             install(module[1])
     def installRequiredModules(needed=None, verbose=True):
         needed = neededInstalls() if needed is None else needed
@@ -68,7 +68,7 @@ def getSoup(*args, **kwargs):
     r = requests.get(*args, **kwargs)
 
     # --- Fix errors in khinsider's HTML
-    removeRe = re.compile(r"^</td>\s*$", re.MULTILINE)
+    removeRe = re.compile(b"^</td>\s*$", re.MULTILINE)
     # ---
     
     return BeautifulSoup(re.sub(removeRe, b'', r.content), 'html.parser')
@@ -133,14 +133,14 @@ def downloadSong(songUrl, path, name="song", numTries=3, verbose=False):
     """Download a single song at `songUrl` to `path`."""
     if verbose:
         print("Downloading {}...".format(name).encode(
-            sys.stdout.encoding, 'replace'))
+            sys.stdout.encoding, 'replace').decode())
 
     tries = 0
     while tries < numTries:
         try:
             if tries and verbose:
                 print("Couldn't download {}. Trying again...".format(
-                    name).encode(sys.stdout.encoding, 'replace'))
+                    name).encode(sys.stdout.encoding, 'replace').decode())
             song = requests.get(songUrl)
             break
         except requests.ConnectionError:
@@ -148,7 +148,7 @@ def downloadSong(songUrl, path, name="song", numTries=3, verbose=False):
     else:
         if verbose:
             print("Couldn't download {}. Skipping over.".format(
-                name).encode(sys.stdout.encoding, 'replace'))
+                name).encode(sys.stdout.encoding, 'replace').decode())
         return
 
     try:
@@ -157,7 +157,7 @@ def downloadSong(songUrl, path, name="song", numTries=3, verbose=False):
     except IOError:
         if verbose:
             print("Couldn't save {}. Check your permissions.".format(
-                name).encode(sys.stdout.encoding, 'replace'))
+                name).encode(sys.stdout.encoding, 'replace').decode())
 
 def search(term):
     """Return a list of OST IDs for the search term `term`."""
@@ -204,7 +204,7 @@ if __name__ == '__main__':
             # I don't know, maybe in some crazy circumstance the encoding for
             # arguments doesn't match stdout's encoding.
             print("\nThe soundtrack \"{}\" does not seem to exist.".format(
-                ostName).encode(sys.stdout.encoding, 'replace'))
+                ostName).encode(sys.stdout.encoding, 'replace').decode())
 
             if searchResults: # aww yeah we gon' do some searchin'
                 print()
