@@ -68,10 +68,10 @@ def getSoup(*args, **kwargs):
     r = requests.get(*args, **kwargs)
 
     # --- Fix errors in khinsider's HTML
-    removeRe = re.compile(b"^</td>\s*$", re.MULTILINE)
+    removeRe = re.compile(r"^</td>\s*$", re.MULTILINE)
     # ---
     
-    return BeautifulSoup(re.sub(removeRe, b'', r.content), 'html.parser')
+    return BeautifulSoup(re.sub(removeRe, '', r.content.decode()), 'html.parser')
 
 class NonexistentSoundtrackError(Exception):
     def __init__(self, ostName=""):
