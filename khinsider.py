@@ -104,29 +104,44 @@ class NonexistentSoundtrackError(Exception):
             s = "The soundtrack \"{ost}\" does not exist.".format(ost=self.ostName)
         return s
 
-def getOstSoup(ostName):
+def getOstContentSoup(ostName):
+    # "ContentSoup" because only the content div of the page is returned,
+    # for easy modifying for The Hylia's different page structure.
     url = "http://downloads.khinsider.com/game-soundtracks/album/" + ostName
-    soup = getSoup(url)
-    if soup.find(id='EchoTopic').find('p').string == "No such album":
+    contentSoup = getSoup(url).find(id='EchoTopic')
+    if contentSoup.find('p').string == "No such album":
         # The EchoTopic and p exist even if the soundtrack doesn't, so no
         # need for error handling here.
         raise NonexistentSoundtrackError(ostName)
-    return soup
+    return contentSoup
 
-def getSongPageUrlList(ostName):
-    soup = getOstSoup(ostName)
-    table = soup('table')[5] # This might change if the page layout ever changes.
+def getSongPageUrlList(soup):
+    table = soup('table')[0]
     trs = table('tr')[1:] # The first tr is a header.
     anchors = [tr('td')[1].find('a') for tr in trs]
     urls = [a['href'] for a in anchors]
     return urls
 
-def getSongList(ostName):
+def getImageInfo(soup):
+    images = []
+    for a in soup('p')[1]('a'):
+        url = a['href']
+        name = url.rsplit('/', 1)[1]
+        # The names start with numbers that aren't really part of the filename.
+        name = name.split('-', 1)[1]
+        info = [name, url]
+        images.append(info)
+    return images
+
+def getFileList(ostName):
     """Get a list of songs from the OST with ID `ostName`."""
     # Each entry is in the format [name, url].
-    songPageUrls = getSongPageUrlList(ostName)
-    songList = [getSongInfo(url) for url in songPageUrls]
-    return songList
+    soup = getOstContentSoup(ostName)
+    songPageUrls = getSongPageUrlList(soup)
+    songs = [getSongInfo(url) for url in songPageUrls]
+    images = getImageInfo(soup)
+    files = songs + images
+    return files
 
 def getSongInfo(songPageUrl):
     """Get the file name and URL of the song at `songPageUrl`. Return a list of [songName, songUrl]."""
@@ -146,7 +161,7 @@ def download(ostName, path="", verbose=False):
     """Download an OST with the ID `ostName` to `path`."""
     if verbose:
         print("Getting song list...")
-    songInfos = getSongList(ostName)
+    songInfos = getFileList(ostName)
     for name, url in songInfos:
         downloadSong(url, path, name, verbose=verbose)
 def downloadSong(songUrl, path, name="song", numTries=3, verbose=False):
