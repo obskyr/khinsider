@@ -67,14 +67,14 @@ import re # For the syntax error in the HTML.
 # Different printin' for different Pythons.
 normal_print = print
 def print(*args, **kwargs):
+    encoding = sys.stdout.encoding or 'utf-8'
     if sys.version_info[0] > 2: # Python 3 can't print bytes properly (!?)
         # This lambda is ACTUALLY a "reasonable"
         # way to print Unicode in Python 3. What.
-        printEncode = lambda s: s.encode(sys.stdout.encoding,
-            'replace').decode(sys.stdout.encoding)
+        printEncode = lambda s: s.encode(encoding, 'replace').decode(encoding)
         unicodeType = str
     else:
-        printEncode = lambda s: s.encode(sys.stdout.encoding, 'replace')
+        printEncode = lambda s: s.encode(encoding, 'replace')
         unicodeType = unicode
     
     args = [
