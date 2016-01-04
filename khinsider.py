@@ -162,12 +162,21 @@ def download(ostName, path="", verbose=False):
     if verbose:
         print("Getting song list...")
     songInfos = getFileList(ostName)
-    for name, url in songInfos:
-        downloadSong(url, path, name, verbose=verbose)
-def downloadSong(songUrl, path, name="song", numTries=3, verbose=False):
+    totalSongs = len(songInfos)
+    for songNumber, (name, url) in enumerate(songInfos):
+        downloadSong(url, path, name, verbose=verbose,
+            songNumber=songNumber + 1, totalSongs=totalSongs)
+def downloadSong(songUrl, path, name="song", numTries=3, verbose=False,
+    songNumber=None, totalSongs=None):
     """Download a single song at `songUrl` to `path`."""
     if verbose:
-        print("Downloading {}...".format(name))
+        numberStr = ""
+        if songNumber is not None and totalSongs is not None:
+            numberStr += str(songNumber).zfill(len(str(totalSongs)))
+            numberStr += "/"
+            numberStr += str(totalSongs)
+            numberStr += ": "
+        print("Downloading {}{}...".format(numberStr, name))
 
     tries = 0
     while tries < numTries:
@@ -232,8 +241,6 @@ if __name__ == '__main__':
                 searchTerm = ' '.join(sys.argv[1:]).replace('-', ' ')
             
             searchResults = search(searchTerm)
-            # I don't know, maybe in some crazy circumstance the encoding for
-            # arguments doesn't match stdout's encoding.
             print("\nThe soundtrack \"{}\" does not seem to exist.".format(
                 ostName))
 
