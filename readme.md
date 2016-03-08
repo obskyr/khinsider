@@ -13,6 +13,8 @@ khinsider.download('jumping-flash')
 # And bam, you've got the Jumping Flash soundtrack!
 ```
 
+For anime music, [check out `thehylia.py`](https://github.com/obskyr/thehylia).
+
 Carefully put together by [@obskyr](http://twitter.com/obskyr)!
 
 ## Usage
