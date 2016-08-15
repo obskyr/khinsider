@@ -134,7 +134,7 @@ def getImageInfo(soup):
     return images
 
 def getFileList(ostName):
-    """Get a list of songs from the OST with ID `ostName`."""
+    """Get a list of files (songs & images) from the OST with ID `ostName`."""
     # Each entry is in the format [name, url].
     soup = getOstContentSoup(ostName)
     songPageUrls = getSongPageUrlList(soup)
@@ -197,7 +197,7 @@ def downloadSong(songUrl, path, name="song", numTries=3, verbose=False,
             outfile.write(song.content)
     except IOError:
         if verbose:
-            print("Couldn't save {}. Check your permissions.".format(name))
+            print("Couldn't save {}. Please check your permissions.".format(name))
 
 def search(term):
     """Return a list of OST IDs for the search term `term`."""
@@ -260,5 +260,7 @@ if __name__ == '__main__':
             if madeDir:
                 os.rmdir(outPath)
             return
-
+        except KeyboardInterrupt:
+            print("Stopped download.")
+    
     doIt()
