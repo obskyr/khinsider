@@ -164,28 +164,27 @@ def download(ostName, path="", verbose=False):
     songInfos = getFileList(ostName)
     totalSongs = len(songInfos)
     for songNumber, (name, url) in enumerate(songInfos):
-        if not os.path.isfile(path + '/' + name):   # if file does not exist
+        if not os.path.isfile(os.path.join(path, name)):
             downloadSong(url, path, name, verbose=verbose,
                 songNumber=songNumber + 1, totalSongs=totalSongs)
         else:
             if verbose:
-                numberStr = ""
-                if songNumber is not None and totalSongs is not None:
-                    numberStr += str(songNumber+1).zfill(len(str(totalSongs)))
-                    numberStr += "/"
-                    numberStr += str(totalSongs)
-                    numberStr += ": "
-                print("File Exists {}{}... Skipped.".format(numberStr, name))
+                numberStr = "{}/{}: ".format(
+                    str(songNumber + 1).zfill(len(str(totalSongs))),
+                    str(totalSongs)
+                )
+                print("Skipping over {}{}. Already exists.".format(
+                    numberStr, name))
 def downloadSong(songUrl, path, name="song", numTries=3, verbose=False,
     songNumber=None, totalSongs=None):
     """Download a single song at `songUrl` to `path`."""
     if verbose:
         numberStr = ""
         if songNumber is not None and totalSongs is not None:
-            numberStr += str(songNumber).zfill(len(str(totalSongs)))
-            numberStr += "/"
-            numberStr += str(totalSongs)
-            numberStr += ": "
+            numberStr = "{}/{}: ".format(
+                str(songNumber).zfill(len(str(totalSongs))),
+                str(totalSongs)
+            )
         print("Downloading {}{}...".format(numberStr, name))
 
     tries = 0
