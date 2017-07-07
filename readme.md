@@ -50,7 +50,7 @@ If `path` is specified, the soundtrack files will be downloaded to that path. If
 
 Search khinsider for `term`. Return a list of soundtrack IDs matching the search term.
 
-## Talk to me!
+# Talk to me!
 
 You can easily get to me by:
 
