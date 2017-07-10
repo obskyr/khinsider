@@ -15,14 +15,15 @@ from __future__ import unicode_literals
 if __name__ == '__main__':
     import imp # To check modules without importing them.
 
+    # User-friendly name, import name, pip specification.
     requiredModules = [
-        ['requests', 'requests'], # Some modules don't have the same pypi name as
-        ['bs4', 'beautifulsoup4'] # import name. Therefore, two entries per module.
+        ['requests', 'requests', 'requests >= 2.0.0, < 3.0.0'],
+        ['Beautiful Soup 4', 'bs4', 'beautifulsoup4 >= 4.0.0, < 5.0.0']
     ]
 
     def moduleExists(module):
         try:
-            imp.find_module(module[0])
+            imp.find_module(module[1])
         except ImportError:
             return False
         return True
@@ -38,8 +39,8 @@ if __name__ == '__main__':
     def installModules(modules, verbose=True):
         for module in modules:
             if verbose:
-                print("Installing {}...".format(module[1]))
-            install(module[1])
+                print("Installing {}...".format(module[0]))
+            install(module[2])
     def installRequiredModules(needed=None, verbose=True):
         needed = neededInstalls() if needed is None else needed
         installModules(neededInstalls(), verbose)
@@ -56,13 +57,12 @@ if __name__ == '__main__':
 
 # ------
 
+import os
+import re # For the syntax error in the HTML.
+import sys
+
 import requests
 from bs4 import BeautifulSoup
-
-import sys
-import os
-
-import re # For the syntax error in the HTML.
 
 # Different printin' for different Pythons.
 normalPrint = print
