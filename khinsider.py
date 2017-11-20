@@ -155,8 +155,6 @@ def getImageInfo(soup):
     for a in soup('p')[1]('a'):
         url = a['href']
         name = url.rsplit('/', 1)[1]
-        # The names start with numbers that aren't really part of the filename.
-        name = name.split('-', 1)[1]
         info = [name, url]
         images.append(info)
     return images
@@ -189,33 +187,33 @@ def download(ostName, path=".", makeDirs=True, verbose=False):
     """Download an OST with the ID `ostName` to `path`."""
     if verbose:
         print("Getting song list...")
-    songInfos = getFileList(ostName)
-    totalSongs = len(songInfos)
+    fileInfos = getFileList(ostName)
+    totalFiles = len(fileInfos)
 
     if makeDirs and not os.path.isdir(path):
         os.makedirs(os.path.abspath(os.path.realpath(path)))
     
-    for songNumber, (name, url) in enumerate(songInfos):
+    for fileNumber, (name, url) in enumerate(fileInfos):
         if not os.path.isfile(os.path.join(path, name)):
-            downloadSong(url, path, name, verbose=verbose,
-                songNumber=songNumber + 1, totalSongs=totalSongs)
+            downloadFile(url, path, name, verbose=verbose,
+                fileNumber=fileNumber + 1, totalFiles=totalFiles)
         else:
             if verbose:
                 numberStr = "{}/{}: ".format(
-                    str(songNumber + 1).zfill(len(str(totalSongs))),
-                    str(totalSongs)
+                    str(fileNumber + 1).zfill(len(str(totalFiles))),
+                    str(totalFiles)
                 )
                 print("Skipping over {}{}. Already exists.".format(
                     numberStr, name))
-def downloadSong(songUrl, path, name="song", numTries=3, verbose=False,
-    songNumber=None, totalSongs=None):
-    """Download a single song at `songUrl` to `path`."""
+def downloadFile(fileUrl, path, name="song", numTries=3, verbose=False,
+    fileNumber=None, totalFiles=None):
+    """Download a single file at `fileUrl` to `path`."""
     if verbose:
         numberStr = ""
-        if songNumber is not None and totalSongs is not None:
+        if fileNumber is not None and totalFiles is not None:
             numberStr = "{}/{}: ".format(
-                str(songNumber).zfill(len(str(totalSongs))),
-                str(totalSongs)
+                str(fileNumber).zfill(len(str(totalFiles))),
+                str(totalFiles)
             )
         print("Downloading {}{}...".format(numberStr, name))
 
@@ -224,7 +222,7 @@ def downloadSong(songUrl, path, name="song", numTries=3, verbose=False,
         try:
             if tries and verbose:
                 print("Couldn't download {}. Trying again...".format(name))
-            song = requests.get(songUrl)
+            response = requests.get(fileUrl)
             break
         except requests.ConnectionError:
             tries += 1
@@ -235,7 +233,7 @@ def downloadSong(songUrl, path, name="song", numTries=3, verbose=False,
 
     try:
         with open(os.path.join(path, name), 'wb') as outfile:
-            outfile.write(song.content)
+            outfile.write(response.content)
     except IOError:
         if verbose:
             print("Couldn't save {}. Please check your permissions.".format(name))
@@ -290,5 +288,13 @@ if __name__ == '__main__':
             print("Make sure you have a working internet connection.")
         except KeyboardInterrupt:
             print("Stopped download.")
+        except Exception as e:
+            print()
+            print("An unexpected error occurred! "
+                  "If it isn't too much to ask, please report to "
+                  "https://github.com/obskyr/khinsider.")
+            print("Attach the following error message:")
+            print()
+            raise e
     
     doIt()
