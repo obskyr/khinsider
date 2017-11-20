@@ -122,25 +122,25 @@ def getSoup(*args, **kwargs):
     return BeautifulSoup(re.sub(removeRe, b'', r.content), 'html.parser')
 
 class NonexistentSoundtrackError(Exception):
-    def __init__(self, ostName=""):
-        super(NonexistentSoundtrackError, self).__init__(ostName)
-        self.ostName = ostName
+    def __init__(self, soundtrackId=""):
+        super(NonexistentSoundtrackError, self).__init__(soundtrackId)
+        self.soundtrackId = soundtrackId
     def __str__(self):
-        if not self.ostName or len(self.ostName) > 80:
+        if not self.soundtrackId or len(self.soundtrackId) > 80:
             s = "The soundtrack does not exist."
         else:
-            s = "The soundtrack \"{ost}\" does not exist.".format(ost=self.ostName)
+            s = "The soundtrack \"{ost}\" does not exist.".format(ost=self.soundtrackId)
         return s
 
-def getOstContentSoup(ostName):
+def getOstContentSoup(soundtrackId):
     # "ContentSoup" because only the content div of the page is returned,
     # for easy modifying for The Hylia's different page structure.
-    url = "http://downloads.khinsider.com/game-soundtracks/album/" + ostName
+    url = "http://downloads.khinsider.com/game-soundtracks/album/" + soundtrackId
     contentSoup = getSoup(url).find(id='EchoTopic')
     if contentSoup.find('p').string == "No such album":
         # The EchoTopic and p exist even if the soundtrack doesn't, so no
         # need for error handling here.
-        raise NonexistentSoundtrackError(ostName)
+        raise NonexistentSoundtrackError(soundtrackId)
     return contentSoup
 
 def getSongPageUrlList(soup):
@@ -159,10 +159,10 @@ def getImageInfo(soup):
         images.append(info)
     return images
 
-def getFileList(ostName):
-    """Get a list of files (songs & images) from the OST with ID `ostName`."""
+def getFileList(soundtrackId):
+    """Get a list of files (songs & images) from the OST with ID `soundtrackId`."""
     # Each entry is in the format [name, url].
-    soup = getOstContentSoup(ostName)
+    soup = getOstContentSoup(soundtrackId)
     songPageUrls = getSongPageUrlList(soup)
     songs = [getSongInfo(url) for url in songPageUrls]
     images = getImageInfo(soup)
@@ -183,11 +183,11 @@ def getSongUrl(songPage):
     url = songPage('p')[3].find('a')['href'] # Download link.
     return url
 
-def download(ostName, path=".", makeDirs=True, verbose=False):
-    """Download an OST with the ID `ostName` to `path`."""
+def download(soundtrackId, path=".", makeDirs=True, verbose=False):
+    """Download an OST with the ID `soundtrackId` to `path`."""
     if verbose:
         print("Getting song list...")
-    fileInfos = getFileList(ostName)
+    fileInfos = getFileList(soundtrackId)
     totalFiles = len(fileInfos)
 
     if makeDirs and not os.path.isdir(path):
@@ -249,45 +249,103 @@ def search(term):
 # --- And now for the execution. ---
 
 if __name__ == '__main__':
+    import argparse
+
+    # Tiny details!
+    class ProperHelpFormatter(argparse.RawTextHelpFormatter):
+        def add_usage(self, usage, actions, groups, prefix=None):
+            if prefix is None:
+                prefix = 'Usage: '
+            return super(ProperHelpFormatter, self).add_usage(usage, actions, groups, prefix)
+
     def doIt(): # Only in a function to be able to stop after errors, really.
-        try:
-            ostName = sys.argv[1].decode(sys.getfilesystemencoding())
-        except AttributeError: # Python 3's argv is in Unicode
-            ostName = sys.argv[1]
-        except IndexError:
+        script_name = os.path.split(sys.argv[0])[-1]
+        if len(sys.argv) == 1:
             print("No soundtrack specified! As the first parameter, use the name the soundtrack uses in its URL.")
             print("If you want to, you can also specify an output directory as the second parameter.")
             print("You can also search for soundtracks by using your search term as parameter - as long as it's not an existing soundtrack.")
+            print()
+            print("For detailed help and more options, run \"{} --help\".".format(script_name))
             return
-        try:
-            outPath = sys.argv[2]
-        except IndexError:
-            outPath = ostName
+
+        parser = argparse.ArgumentParser(description="Download entire soundtracks from KHInsider.\n\n"
+                                         "Examples:\n"
+                                         "%(prog)s jumping-flash\n"
+                                         "%(prog)s katamari-forever \"music{}Katamari Forever OST\"\n"
+                                         "%(prog)s --search persona\n"
+                                         "%(prog)s --format flac mother-3".format(os.sep),
+                                         epilog="Hope you enjoy the script!",
+                                         formatter_class=ProperHelpFormatter,
+                                         add_help=False)
+        
+        try: # More tiny details!
+            parser._positionals.title = "Positional arguments"
+            parser._optionals.title = "Optional arguments"
+        except AttributeError:
+            pass
+
+        parser.add_argument('soundtrack',
+                            help="The ID of the soundtrack, used at the end of its URL (e.g. \"jumping-flash\").\n"
+                            "If it doesn't exist (or --search is specified, orrrr too many arguments are supplied),\n"
+                            "all the positional arguments together are used as a search term.")
+        parser.add_argument('outPath', metavar='download directory', nargs='?',
+                            help="The directory to download the soundtrack to.\n"
+                            "Defaults to creating a new directory with the soundtrack ID as its name.")
+        parser.add_argument('trailingArguments', nargs='*', help=argparse.SUPPRESS)
+        
+        parser.add_argument('-h', '--help', action='help', default=argparse.SUPPRESS,
+                            help="Show this help and exit.")
+        parser.add_argument('-s', '--search', action='store_true',
+                            help="Always search, regardless of whether the specified soundtrack ID exists or not.")
+
+        arguments = parser.parse_args()
 
         try:
-            download(ostName, outPath, verbose=True)
-        except NonexistentSoundtrackError:
-            try:
-                searchTerm = ' '.join([a.decode(sys.getfilesystemencoding())
-                    for a in sys.argv[1:]
-                ]).replace('-', ' ')
-            except AttributeError: # Python 3, again
-                searchTerm = ' '.join(sys.argv[1:]).replace('-', ' ')
-            
-            searchResults = search(searchTerm)
-            print("\nThe soundtrack \"{}\" does not seem to exist.".format(
-                ostName))
+            soundtrack = arguments.soundtrack.decode(sys.getfilesystemencoding())
+        except AttributeError: # Python 3's argv is in Unicode
+            soundtrack = arguments.soundtrack
 
-            if searchResults: # aww yeah we gon' do some searchin'
-                print()
-                print("These exist, though:")
-                for name in searchResults:
-                    print(name)
+        outPath = arguments.outPath if arguments.outPath is not None else soundtrack
+
+        # I think this makes the most sense for people who aren't used to the
+        # command line - this'll yield useful results even if you just type
+        # in an entire soundtrack name as arguments without quotation marks.
+        onlySearch = arguments.search or len(arguments.trailingArguments) > 1
+        searchTerm = [soundtrack] + ([outPath] if arguments.outPath is not None else [])
+        searchTerm += arguments.trailingArguments
+        try:
+            searchTerm = ' '.join(arg.decode(sys.getfilesystemencoding()) for arg in searchTerm)
+        except AttributeError: # Python 3, again
+            searchTerm = ' '.join(searchTerm)
+        searchTerm = searchTerm.replace('-', ' ')
+
+        try:
+            if onlySearch:
+                searchResults = search(searchTerm)
+                if searchResults:
+                    print("Soundtracks found (to download, "
+                          "run \"{} soundtrack-name\"):".format(script_name))
+                    for name in searchResults:
+                        print(name)
+                else:
+                    print("No soundtracks found.")
+            else:
+                try:
+                    download(soundtrack, outPath, verbose=True)
+                except NonexistentSoundtrackError:
+                    searchResults = search(searchTerm)
+                    print("\nThe soundtrack \"{}\" does not seem to exist.".format(soundtrack))
+
+                    if searchResults: # aww yeah we gon' do some searchin'
+                        print()
+                        print("These exist, though:")
+                        for name in searchResults:
+                            print(name)
+                except KeyboardInterrupt:
+                    print("Stopped download.")
         except requests.ConnectionError:
             print("Could not connect to KHInsider.")
             print("Make sure you have a working internet connection.")
-        except KeyboardInterrupt:
-            print("Stopped download.")
         except Exception as e:
             print()
             print("An unexpected error occurred! "
