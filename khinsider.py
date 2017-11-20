@@ -7,6 +7,10 @@
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import os
+import re # For the syntax error in the HTML.
+import sys
+
 # --- Install prerequisites---
 
 # (This section in `if __name__ == '__main__':` is entirely unrelated to the
@@ -20,6 +24,17 @@ if __name__ == '__main__':
         ['requests', 'requests', 'requests >= 2.0.0, < 3.0.0'],
         ['Beautiful Soup 4', 'bs4', 'beautifulsoup4 >= 4.0.0, < 5.0.0']
     ]
+
+    class Silence(object):
+        def __enter__(self):
+            self._stdout = sys.stdout
+            self._stderr = sys.stderr
+            sys.stdout = open(os.devnull, 'w')
+            sys.stderr = open(os.devnull, 'w')
+        
+        def __exit__(self, *_):
+            sys.stdout = self._stdout
+            sys.stderr = self._stderr
 
     def moduleExists(module):
         try:
@@ -35,12 +50,25 @@ if __name__ == '__main__':
         return uninstalledModules
 
     def install(package):
-        pip.main(['install', '--quiet', package])
+        with Silence(): # To silence pip's errors.
+            exitStatus = pip.main(['install', '--quiet', package])
+        if exitStatus != 0:
+            raise OSError("Failed to install package.")
     def installModules(modules, verbose=True):
         for module in modules:
             if verbose:
                 print("Installing {}...".format(module[0]))
-            install(module[2])
+            
+            try:
+                install(module[2])
+            except OSError as e:
+                if verbose:
+                    print("Failed to install {}. "
+                          "You may need to run the script as an administrator "
+                          "or superuser.".format(module[0]))
+                    print ("You can also try to install the package manually "
+                           "(pip install \"{}\")".format(module[2]))
+                raise e
     def installRequiredModules(needed=None, verbose=True):
         needed = neededInstalls() if needed is None else needed
         installModules(neededInstalls(), verbose)
@@ -52,14 +80,14 @@ if __name__ == '__main__':
         except ImportError:
             print("You don't seem to have pip installed!")
             print("Get it from https://pip.readthedocs.org/en/latest/installing.html")
+            sys.exit()
 
-    installRequiredModules(needed)
+    try:
+        installRequiredModules(needed)
+    except OSError:
+        sys.exit()
 
 # ------
-
-import os
-import re # For the syntax error in the HTML.
-import sys
 
 import requests
 from bs4 import BeautifulSoup
