@@ -203,6 +203,16 @@ class NonexistentSoundtrackError(Exception):
 
 
 class Soundtrack(object):
+    """A KHInsider soundtrack. Initialize with a soundtrack ID.
+    
+    Properties:
+    * id:     The soundtrack's unique ID, used at the end of its URL.
+    * url:    The full URL of the soundtrack.
+    * availableFormats: A list of the formats the soundtrack is available in.
+    * songs:  A list of Song objects representing the songs in the soundtrack.
+    * images: A list of File objects representing the images in the soundtrack.
+    """
+
     def __init__(self, soundtrackId):
         self.id = soundtrackId
         self.url = urljoin(BASE_URL, 'game-soundtracks/album/' + self.id)
@@ -249,6 +259,16 @@ class Soundtrack(object):
         return images
 
     def download(self, path='', makeDirs=True, formatOrder=None, verbose=False):
+        """Download the soundtrack to the directory specified by `path`!
+        
+        Create any directories that are missing if `makeDirs` is set to True.
+
+        Set `formatOrder` to a list of file extensions to specify the order
+        in which to prefer file formats. If set to ['flac', 'mp3'], for
+        example, FLAC files will be downloaded if available, and otherwise MP3.
+        
+        Print progress along the way if `verbose` is set to True.
+        """
         path = os.path.join(os.getcwd(), path)
         path = os.path.abspath(os.path.realpath(path))
         if formatOrder:
@@ -276,6 +296,15 @@ class Soundtrack(object):
 
 
 class Song(object):
+    """A song on KHInsider.
+    
+    Properties:
+    * url:   The full URL of the song page.
+    * name:  The name of the song.
+    * files: A list of the song's files - there may be several if the song
+             is available in more than one format.
+    """
+    
     def __init__(self, url):
         self.url = url
     
@@ -300,6 +329,13 @@ class Song(object):
 
 
 class File(object):
+    """A file belonging to a soundtrack on KHInsider.
+    
+    Properties:
+    * url:      The full URL of the file.
+    * filename: The file's... filename. You got it.
+    """
+
     def __init__(self, url):
         self.url = url
         self.filename = unquote(url.rsplit('/', 1)[-1])
@@ -308,17 +344,21 @@ class File(object):
         return "<{}: {}>".format(self.__class__.__name__, self.url)
     
     def download(self, path):
+        """Download the file to `path`."""
         response = requests.get(self.url, timeout=10)
         with open(path, 'wb') as outFile:
             outFile.write(response.content)
 
 
 def download(soundtrackId, path='', makeDirs=True, formatOrder=None, verbose=False):
+    """Download the soundtrack with the ID `soundtrackId`.
+    See Soundtrack.download for more information.
+    """
     Soundtrack(soundtrackId).download(path, makeDirs, formatOrder, verbose)
 
 
 def search(term):
-    """Return a list of OST IDs for the search term `term`."""
+    """Return a list of Soundtrack objects for the search term `term`."""
     soup = getSoup(urljoin(BASE_URL, 'search'), params={'search': term})
     anchors = soup('p')[1]('a')
     soundtrackIds = [a['href'].split('/')[-1] for a in anchors]
