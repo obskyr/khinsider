@@ -237,16 +237,15 @@ class Soundtrack(object):
     def availableFormats(self):
         table = self._contentSoup.find('table')
         header = table.find('tr')
-        headings = [td.get_text(strip=True) for td in header('td')]
-        formats = [s.lower() for s in headings if s not in {"Song Name", "Download", "Size"}]
+        headings = [td.get_text(strip=True) for td in header(['th', 'td'])]
+        formats = [s.lower() for s in headings if s not in {"Track", "Song Name", "Download", "Size"}]
         formats = formats or ['mp3']
         return formats
 
     @lazy_property
     def songs(self):
         table = self._contentSoup.find('table')
-        trs = table('tr')[1:] # The first tr is a header.
-        anchors = [tr.find('a') for tr in trs]
+        anchors = [tr.find('a') for tr in table('tr') if not tr.find('th')]
         urls = [a['href'] for a in anchors]
         songs = [Song(urljoin(self.url, url)) for url in urls]
         return songs
