@@ -477,13 +477,13 @@ if __name__ == '__main__':
         except (requests.ConnectionError, requests.Timeout):
             print("Could not connect to KHInsider.")
             print("Make sure you have a working internet connection.")
-        except Exception as e:
+        except Exception:
             print()
             print("An unexpected error occurred! "
                   "If it isn't too much to ask, please report to "
                   "https://github.com/obskyr/khinsider/issues.")
             print("Attach the following error message:")
             print()
-            raise e
+            raise
     
     doIt()
