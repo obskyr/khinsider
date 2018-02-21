@@ -102,34 +102,27 @@ BASE_URL = 'https://downloads.khinsider.com/'
 
 # Different printin' for different Pythons.
 normalPrint = print
-def print(*args, **kwargs):
+def unicodePrint(*args, **kwargs):
     encoding = sys.stdout.encoding or 'utf-8'
-    if sys.version_info[0] > 2: # Python 3 can't print bytes properly (!?)
-        # This lambda is ACTUALLY a "reasonable"
-        # way to print Unicode in Python 3. What.
-        printEncode = lambda s: s.encode(encoding, 'replace').decode(encoding)
-        unicodeType = str
-    else:
-        printEncode = lambda s: s.encode(encoding, 'replace')
-        unicodeType = unicode
+    printEncode = lambda s: s.encode(encoding, 'replace').decode(encoding)
     
     args = [
         printEncode(arg)
-        if isinstance(arg, unicodeType) else arg
+        if isinstance(arg, str) else arg
         for arg in args
     ]
     normalPrint(*args, **kwargs)
 
 
-def lazy_property(func):
-    attr_name = '_lazy_' + func.__name__
+def lazyProperty(func):
+    attrName = '_lazy_' + func.__name__
     @property
     @wraps(func)
-    def lazy_version(self):
-        if not hasattr(self, attr_name):
-            setattr(self, attr_name, func(self))
-        return getattr(self, attr_name)
-    return lazy_version
+    def lazyVersion(self):
+        if not hasattr(self, attrName):
+            setattr(self, attrName, func(self))
+        return getattr(self, attrName)
+    return lazyVersion
 
 
 def getSoup(*args, **kwargs):
@@ -223,7 +216,7 @@ class Soundtrack(object):
     def _isLoaded(self, property):
         return hasattr(self, '_lazy_' + property)
 
-    @lazy_property
+    @lazyProperty
     def _contentSoup(self):
         soup = getSoup(self.url)
         contentSoup = soup.find(id='EchoTopic')
@@ -233,7 +226,7 @@ class Soundtrack(object):
             raise NonexistentSoundtrackError(self.id)
         return contentSoup
 
-    @lazy_property
+    @lazyProperty
     def availableFormats(self):
         table = self._contentSoup.find('table')
         header = table.find('tr')
@@ -242,15 +235,15 @@ class Soundtrack(object):
         formats = formats or ['mp3']
         return formats
 
-    @lazy_property
+    @lazyProperty
     def songs(self):
-        table = self._contentSoup.find('table')
+        table = self._contentSoup.find('table', id='songlist')
         anchors = [tr.find('a') for tr in table('tr') if not tr.find('th')]
         urls = [a['href'] for a in anchors]
         songs = [Song(urljoin(self.url, url)) for url in urls]
         return songs
     
-    @lazy_property
+    @lazyProperty
     def images(self):
         anchors = self._contentSoup('p')[1]('a')
         urls = [a['href'] for a in anchors]
@@ -310,15 +303,15 @@ class Song(object):
     def __repr__(self):
         return "<{}: {}>".format(self.__class__.__name__, self.url)
     
-    @lazy_property
+    @lazyProperty
     def _soup(self):
         return getSoup(self.url)
 
-    @lazy_property
+    @lazyProperty
     def name(self):
         return self._soup('p')[2]('b')[1].get_text()
 
-    @lazy_property
+    @lazyProperty
     def files(self):
         anchors = [p.find('a') for p in self._soup('p', string=re.compile(r'^\s*Click here to download'))]
         files = [File(urljoin(self.url, a['href'])) for a in anchors]
