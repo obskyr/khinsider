@@ -17,6 +17,19 @@ try:
 except ImportError: # Python 2
     from urlparse import unquote, urljoin
 
+
+class Silence(object):
+    def __enter__(self):
+        self._stdout = sys.stdout
+        self._stderr = sys.stderr
+        sys.stdout = open(os.devnull, 'w')
+        sys.stderr = open(os.devnull, 'w')
+    
+    def __exit__(self, *_):
+        sys.stdout = self._stdout
+        sys.stderr = self._stderr
+
+
 # --- Install prerequisites---
 
 # (This section in `if __name__ == '__main__':` is entirely unrelated to the
@@ -30,17 +43,6 @@ if __name__ == '__main__':
         ['requests', 'requests', 'requests >= 2.0.0, < 3.0.0'],
         ['Beautiful Soup 4', 'bs4', 'beautifulsoup4 >= 4.4.0, < 5.0.0']
     ]
-
-    class Silence(object):
-        def __enter__(self):
-            self._stdout = sys.stdout
-            self._stderr = sys.stderr
-            sys.stdout = open(os.devnull, 'w')
-            sys.stderr = open(os.devnull, 'w')
-        
-        def __exit__(self, *_):
-            sys.stdout = self._stdout
-            sys.stderr = self._stderr
 
     def moduleExists(module):
         try:
@@ -131,7 +133,10 @@ def getSoup(*args, **kwargs):
     # Fix errors in khinsider's HTML
     removeRe = re.compile(br"^</td>\s*$", re.MULTILINE)
     
-    return BeautifulSoup(re.sub(removeRe, b'', r.content), 'html.parser')
+    # BS4 outputs unsuppressable error messages when it can't
+    # decode the input bytes properly. This... suppresses them.
+    with Silence():
+        return BeautifulSoup(re.sub(removeRe, b'', r.content), 'html.parser')
 
 
 def strictSplitext(filename):
