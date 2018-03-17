@@ -102,6 +102,7 @@ from bs4 import BeautifulSoup
 
 BASE_URL = 'https://downloads.khinsider.com/'
 
+
 # Different printin' for different Pythons.
 normalPrint = print
 def unicodePrint(*args, **kwargs):
@@ -313,12 +314,17 @@ class Song(object):
 
     @lazyProperty
     def name(self):
-        return self._soup('p')[2]('b')[1].get_text()
+        name = self._soup('p')[2]('b')[1].get_text()
+        return name or self._files_with_url_filenames[0].filename
+
+    @lazyProperty
+    def _files_with_url_filenames(self):
+        anchors = [p.find('a') for p in self._soup('p', string=re.compile(r'^\s*Click here to download'))]
+        return [File(urljoin(self.url, a['href'])) for a in anchors]
 
     @lazyProperty
     def files(self):
-        anchors = [p.find('a') for p in self._soup('p', string=re.compile(r'^\s*Click here to download'))]
-        files = [File(urljoin(self.url, a['href'])) for a in anchors]
+        files = self._files_with_url_filenames
         for file in files:
             file.filename = strictSplitext(self.name)[0] + os.path.splitext(file.filename)[1]
         return files
