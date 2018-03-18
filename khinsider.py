@@ -139,16 +139,6 @@ def getSoup(*args, **kwargs):
         return BeautifulSoup(re.sub(removeRe, b'', r.content), 'html.parser')
 
 
-def strictSplitext(filename):
-    try:
-        dotIndex = filename.rindex('.')
-    except ValueError:
-        return [filename, '']
-    if re.match(r'^[A-Za-z0-9]+$', filename[dotIndex + 1:]):
-        return [filename[:dotIndex], filename[dotIndex:]]
-    else:
-        return [filename, '']
-
 def getAppropriateFile(song, formatOrder):
     if formatOrder is None:
         return song.files[0]
@@ -314,20 +304,12 @@ class Song(object):
 
     @lazyProperty
     def name(self):
-        name = self._soup('p')[2]('b')[1].get_text()
-        return name or self._files_with_url_filenames[0].filename
-
-    @lazyProperty
-    def _files_with_url_filenames(self):
-        anchors = [p.find('a') for p in self._soup('p', string=re.compile(r'^\s*Click here to download'))]
-        return [File(urljoin(self.url, a['href'])) for a in anchors]
+        return self._soup('p')[2]('b')[1].get_text()
 
     @lazyProperty
     def files(self):
-        files = self._files_with_url_filenames
-        for file in files:
-            file.filename = strictSplitext(self.name)[0] + os.path.splitext(file.filename)[1]
-        return files
+        anchors = [p.find('a') for p in self._soup('p', string=re.compile(r'^\s*Click here to download'))]
+        return [File(urljoin(self.url, a['href'])) for a in anchors]
 
 
 class File(object):
