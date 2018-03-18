@@ -167,7 +167,15 @@ def friendlyDownloadFile(file, path, name, index, total, verbose=False):
         str(total)
     )
     path = os.path.join(path, file.filename)
-    
+
+    # Necessary for sound tracks that have duplicate names. I.e., Etrian Odyssey OST
+    if os.path.exists(path):
+        duplicate = "_dup"
+        if verbose:
+            unicodePrint("File {} exists: Appending {} to path.".format(name, duplicate))
+        path = path + duplicate
+        name = name + duplicate
+
     if not os.path.exists(path):
         if verbose:
             unicodePrint("Downloading {}: {}...".format(numberStr, name))
