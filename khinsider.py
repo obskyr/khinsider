@@ -17,12 +17,6 @@ try:
 except ImportError: # Python 2
     from urlparse import unquote, urljoin
 
-# Windows disallows a few more characters in filenames than Linux does.
-if os.name == 'nt':
-    FILENAME_INVALID_RE = re.compile(r'[<>:"/\\|?*]')
-else:
-    FILENAME_INVALID_RE = re.compile(r'/')
-
 
 class Silence(object):
     def __enter__(self):
@@ -36,7 +30,7 @@ class Silence(object):
         sys.stderr = self._stderr
 
 
-# --- Install prerequisites---
+# --- Install prerequisites ---
 
 # (This section in `if __name__ == '__main__':` is entirely unrelated to the
 # rest of the module, and doesn't even run if the module isn't run by itself.)
@@ -79,9 +73,11 @@ if __name__ == '__main__':
                 if verbose:
                     print("Failed to install {}. "
                           "You may need to run the script as an administrator "
-                          "or superuser.".format(module[0]))
+                          "or superuser.".format(module[0]),
+                          file=sys.stderr)
                     print ("You can also try to install the package manually "
-                           "(pip install \"{}\")".format(module[2]))
+                           "(pip install \"{}\")".format(module[2]),
+                           file=sys.stderr)
                 raise e
     def installRequiredModules(needed=None, verbose=True):
         needed = neededInstalls() if needed is None else needed
@@ -94,12 +90,12 @@ if __name__ == '__main__':
         except ImportError:
             print("You don't seem to have pip installed!")
             print("Get it from https://pip.readthedocs.org/en/latest/installing.html")
-            sys.exit()
+            sys.exit(1)
 
     try:
         installRequiredModules(needed)
     except OSError:
-        sys.exit()
+        sys.exit(1)
 
 # ------
 
@@ -108,9 +104,12 @@ from bs4 import BeautifulSoup
 
 BASE_URL = 'https://downloads.khinsider.com/'
 
+# Although some of these are valid on Linux, keeping this the same
+# across systems is nice for consistency AND it works on WSL.
+FILENAME_INVALID_RE = re.compile(r'[<>:"/\\|?*]')
+
 
 # Different printin' for different Pythons.
-normalPrint = print
 def unicodePrint(*args, **kwargs):
     unicodeType = str if sys.version_info[0] > 2 else unicode
     encoding = sys.stdout.encoding or 'utf-8'
@@ -119,7 +118,7 @@ def unicodePrint(*args, **kwargs):
         if isinstance(arg, unicodeType) else arg
         for arg in args
     ]
-    normalPrint(*args, **kwargs)
+    print(*args, **kwargs)
 
 
 def lazyProperty(func):
@@ -170,7 +169,7 @@ def friendlyDownloadFile(file, path, index, total, verbose=False):
             unicodePrint("Downloading {}: {}...".format(numberStr, filename))
         for triesElapsed in range(3):
             if verbose and triesElapsed:
-                unicodePrint("Couldn't download {}. Trying again...".format(filename))
+                unicodePrint("Couldn't download {}. Trying again...".format(filename), file=sys.stderr)
             try:
                 file.download(path)
             except (requests.ConnectionError, requests.Timeout):
@@ -179,10 +178,13 @@ def friendlyDownloadFile(file, path, index, total, verbose=False):
                 break
         else:
             if verbose:
-                unicodePrint("Couldn't download {}. Skipping over.".format(filename))
+                unicodePrint("Couldn't download {}. Skipping over.".format(filename), file=sys.stderr)
+            return False
     else:
         if verbose:
             unicodePrint("Skipping over {}: {}. Already exists.".format(numberStr, filename))
+
+    return True
 
 
 class NonexistentSoundtrackError(Exception):
@@ -262,6 +264,8 @@ class Soundtrack(object):
         example, FLAC files will be downloaded if available, and otherwise MP3.
         
         Print progress along the way if `verbose` is set to True.
+
+        Return True if all files were downloaded successfully, False if not.
         """
         path = os.path.join(os.getcwd(), path)
         path = os.path.abspath(os.path.realpath(path))
@@ -285,8 +289,12 @@ class Soundtrack(object):
         if makeDirs and not os.path.isdir(path):
             os.makedirs(os.path.abspath(os.path.realpath(path)))
 
+        success = True
         for fileNumber, file in enumerate(files, 1):
-            friendlyDownloadFile(file, path, fileNumber, totalFiles, verbose)
+            if not friendlyDownloadFile(file, path, fileNumber, totalFiles, verbose):
+                success = False
+        
+        return success
 
 
 class Song(object):
@@ -345,7 +353,7 @@ def download(soundtrackId, path='', makeDirs=True, formatOrder=None, verbose=Fal
     """Download the soundtrack with the ID `soundtrackId`.
     See Soundtrack.download for more information.
     """
-    Soundtrack(soundtrackId).download(path, makeDirs, formatOrder, verbose)
+    return Soundtrack(soundtrackId).download(path, makeDirs, formatOrder, verbose)
 
 
 def search(term):
@@ -366,12 +374,12 @@ if __name__ == '__main__':
     # Tiny details!
     class KindArgumentParser(argparse.ArgumentParser):
         def error(self, message):
-            print("No soundtrack specified! As the first parameter, use the name the soundtrack uses in its URL.")
-            print("If you want to, you can also specify an output directory as the second parameter.")
-            print("You can also search for soundtracks by using your search term as parameter - as long as it's not an existing soundtrack.")
-            print()
-            print("For detailed help and more options, run \"{} --help\".".format(SCRIPT_NAME))
-            sys.exit(2)
+            print("No soundtrack specified! As the first parameter, use the name the soundtrack uses in its URL.", file=sys.stderr)
+            print("If you want to, you can also specify an output directory as the second parameter.", file=sys.stderr)
+            print("You can also search for soundtracks by using your search term as parameter - as long as it's not an existing soundtrack.", file=sys.stderr)
+            print(file=sys.stderr)
+            print("For detailed help and more options, run \"{} --help\".".format(SCRIPT_NAME), file=sys.stderr)
+            sys.exit(1)
 
     # More tiny details!
     class ProperHelpFormatter(argparse.RawTextHelpFormatter):
@@ -453,28 +461,38 @@ if __name__ == '__main__':
                     print("No soundtracks found.")
             else:
                 try:
-                    download(soundtrack, outPath, formatOrder=formatOrder, verbose=True)
+                    success = download(soundtrack, outPath, formatOrder=formatOrder, verbose=True)
+                    if not success:
+                        print("\nNot all files could be downloaded.", file=sys.stderr)
+                        return 1
                 except NonexistentSoundtrackError:
                     searchResults = search(searchTerm)
-                    print("\nThe soundtrack \"{}\" does not seem to exist.".format(soundtrack))
+                    print("\nThe soundtrack \"{}\" does not seem to exist.".format(soundtrack), file=sys.stderr)
 
                     if searchResults: # aww yeah we gon' do some searchin'
-                        print()
-                        print("These exist, though:")
+                        print(file=sys.stderr)
+                        print("These exist, though:", file=sys.stderr)
                         for soundtrack in searchResults:
-                            print(soundtrack.id)
+                            print(soundtrack.id, file=sys.stderr)
+                    
+                    return 1
                 except KeyboardInterrupt:
-                    print("Stopped download.")
+                    print("Stopped download.", file=sys.stderr)
+                    return 1
         except (requests.ConnectionError, requests.Timeout):
-            print("Could not connect to KHInsider.")
-            print("Make sure you have a working internet connection.")
+            print("Could not connect to KHInsider.", file=sys.stderr)
+            print("Make sure you have a working internet connection.", file=sys.stderr)
+            return 1
         except Exception:
-            print()
+            print(file=sys.stderr)
             print("An unexpected error occurred! "
                   "If it isn't too much to ask, please report to "
-                  "https://github.com/obskyr/khinsider/issues.")
-            print("Attach the following error message:")
-            print()
+                  "https://github.com/obskyr/khinsider/issues.",
+                  file=sys.stderr)
+            print("Attach the following error message:", file=sys.stderr)
+            print(file=sys.stderr)
             raise
     
-    doIt()
+        return 0
+    
+    sys.exit(doIt())
