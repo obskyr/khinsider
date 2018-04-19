@@ -58,8 +58,10 @@ if __name__ == '__main__':
         return uninstalledModules
 
     def install(package):
-        with Silence(): # To silence pip's errors.
-            exitStatus = pip.main(['install', '--quiet', package])
+        nowhere = open(os.devnull, 'w')
+        exitStatus = subprocess.call([sys.executable, '-m', 'pip', 'install', package],
+                                     stdout=nowhere,
+                                     stderr=nowhere)
         if exitStatus != 0:
             raise OSError("Failed to install package.")
     def installModules(modules, verbose=True):
@@ -84,13 +86,16 @@ if __name__ == '__main__':
         installModules(neededInstalls(), verbose)
 
     needed = neededInstalls()
-    if needed: # Only import pip if modules are actually missing.
+    if needed:
         try:
-            import pip # To install modules if they're not there.
+            imp.find_module('pip')
         except ImportError:
             print("You don't seem to have pip installed!")
             print("Get it from https://pip.readthedocs.org/en/latest/installing.html")
             sys.exit(1)
+        else:
+            # Needed to call pip the official way.
+            import subprocess
 
     try:
         installRequiredModules(needed)
