@@ -17,6 +17,12 @@ try:
 except ImportError: # Python 2
     from urlparse import unquote, urljoin
 
+# Windows disallows a few more characters in filenames than Linux does.
+if os.name == 'nt':
+    FILENAME_INVALID_RE = re.compile(r'[<>:"/\\|?*]')
+else:
+    FILENAME_INVALID_RE = re.compile(r'/')
+
 
 class Silence(object):
     def __enter__(self):
@@ -151,19 +157,20 @@ def getAppropriateFile(song, formatOrder):
     return song.files[0]
 
 
-def friendlyDownloadFile(file, path, name, index, total, verbose=False):
+def friendlyDownloadFile(file, path, index, total, verbose=False):
     numberStr = "{}/{}".format(
         str(index).zfill(len(str(total))),
         str(total)
     )
-    path = os.path.join(path, file.filename)
+    filename = FILENAME_INVALID_RE.sub('-', file.filename)
+    path = os.path.join(path, filename)
     
     if not os.path.exists(path):
         if verbose:
-            unicodePrint("Downloading {}: {}...".format(numberStr, name))
+            unicodePrint("Downloading {}: {}...".format(numberStr, filename))
         for triesElapsed in range(3):
             if verbose and triesElapsed:
-                unicodePrint("Couldn't download {}. Trying again...".format(name))
+                unicodePrint("Couldn't download {}. Trying again...".format(filename))
             try:
                 file.download(path)
             except (requests.ConnectionError, requests.Timeout):
@@ -172,10 +179,10 @@ def friendlyDownloadFile(file, path, name, index, total, verbose=False):
                 break
         else:
             if verbose:
-                unicodePrint("Couldn't download {}. Skipping over.".format(name))
+                unicodePrint("Couldn't download {}. Skipping over.".format(filename))
     else:
         if verbose:
-            unicodePrint("Skipping over {}: {}. Already exists.".format(numberStr, name))
+            unicodePrint("Skipping over {}: {}. Already exists.".format(numberStr, filename))
 
 
 class NonexistentSoundtrackError(Exception):
@@ -279,7 +286,7 @@ class Soundtrack(object):
             os.makedirs(os.path.abspath(os.path.realpath(path)))
 
         for fileNumber, file in enumerate(files, 1):
-            friendlyDownloadFile(file, path, file.filename, fileNumber, totalFiles, verbose)
+            friendlyDownloadFile(file, path, fileNumber, totalFiles, verbose)
 
 
 class Song(object):
