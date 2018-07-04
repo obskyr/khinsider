@@ -24,7 +24,7 @@ Carefully put together by [@obskyr](http://twitter.com/obskyr)!
 
 ## Usage
 
-Just run `khinsider.py` from the command line with the sole parameter being the soundtrack you want to download. Easy!
+Just run `khinsider.py` from the command line with the sole parameter being the soundtrack you want to download. You can either use the soundtrack's ID, or simply copy its entire URL. Easy!
 
 If you want, you can also add another parameter as the output folder, but that's optional.
 

@@ -8,14 +8,14 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import os
-import re # For the syntax error in the HTML.
+import re
 import sys
 from functools import wraps
 
 try:
-    from urllib.parse import unquote, urljoin
+    from urllib.parse import unquote, urljoin, urlsplit
 except ImportError: # Python 2
-    from urlparse import unquote, urljoin
+    from urlparse import unquote, urljoin, urlsplit
 
 
 class Silence(object):
@@ -418,6 +418,7 @@ if __name__ == '__main__':
 
         parser.add_argument('soundtrack',
                             help="The ID of the soundtrack, used at the end of its URL (e.g. \"jumping-flash\").\n"
+                            "May also simply be the URL of the soundtrack.\n"
                             "If it doesn't exist (or --search is specified, orrrr too many arguments are supplied),\n"
                             "all the positional arguments together are used as a search term.")
         parser.add_argument('outPath', metavar='download directory', nargs='?',
@@ -440,6 +441,12 @@ if __name__ == '__main__':
             soundtrack = arguments.soundtrack.decode(sys.getfilesystemencoding())
         except AttributeError: # Python 3's argv is in Unicode
             soundtrack = arguments.soundtrack
+        
+        urlRe = re.compile(r"^https?://" + urlsplit(BASE_URL).netloc +
+                           r"/game-soundtracks/album/(?P<soundtrack>[^/]+)$",
+                           re.IGNORECASE)
+        m = urlRe.match(soundtrack)
+        soundtrack = m.group('soundtrack') if m is not None else soundtrack
 
         outPath = arguments.outPath if arguments.outPath is not None else soundtrack
 
