@@ -198,17 +198,26 @@ def friendlyDownloadFile(file, path, index, total, verbose=False):
     return True
 
 
-class NonexistentSoundtrackError(Exception):
-    def __init__(self, soundtrackId=""):
-        super(NonexistentSoundtrackError, self).__init__(soundtrackId)
-        self.soundtrackId = soundtrackId
+class SoundtrackError(Exception):
+    def __init__(self, soundtrack):
+        self.soundtrack = soundtrack
+
+class NonexistentSoundtrackError(SoundtrackError, ValueError):
     def __str__(self):
-        if not self.soundtrackId or len(self.soundtrackId) > 80:
-            s = "The soundtrack does not exist."
-        else:
-            s = "The soundtrack \"{ost}\" does not exist.".format(ost=self.soundtrackId)
+        ost = '"{}" '.format(self.soundtrack.id) if len(self.soundtrack.id) <= 80 else ""
+        s = "The soundtrack {}does not exist.".format(ost)
         return s
 
+class NonexistentFormatsError(SoundtrackError, ValueError):
+    def __init__(self, soundtrack, requestedFormats):
+        super(NonexistentFormatsError, self).__init__(soundtrack)
+        self.requestedFormats = requestedFormats
+    def __str__(self):
+        ost = '"{}" '.format(self.soundtrack.id) if len(self.soundtrack.id) <= 80 else ""
+        s = "The soundtrack {}is not available in the requested formats ({}).".format(
+            ost,
+            ", ".join('"{}"'.format(extension) for extension in self.requestedFormats))
+        return s
 
 class Soundtrack(object):
     """A KHInsider soundtrack. Initialize with a soundtrack ID.
@@ -238,15 +247,15 @@ class Soundtrack(object):
         if contentSoup.find('p').string == "No such album":
             # The EchoTopic and p exist even if the soundtrack doesn't, so no
             # need for error handling here.
-            raise NonexistentSoundtrackError(self.id)
+            raise NonexistentSoundtrackError(self)
         return contentSoup
 
     @lazyProperty
     def availableFormats(self):
-        table = self._contentSoup.find('table')
+        table = self._contentSoup.find('table', id='songlist')
         header = table.find('tr')
         headings = [td.get_text(strip=True) for td in header(['th', 'td'])]
-        formats = [s.lower() for s in headings if s not in {"Track", "Song Name", "Download", "Size"}]
+        formats = [s.lower() for s in headings if s not in {"", "Track", "Song Name", "Download", "Size"}]
         formats = formats or ['mp3']
         return formats
 
@@ -271,8 +280,9 @@ class Soundtrack(object):
         Create any directories that are missing if `makeDirs` is set to True.
 
         Set `formatOrder` to a list of file extensions to specify the order
-        in which to prefer file formats. If set to ['flac', 'mp3'], for
-        example, FLAC files will be downloaded if available, and otherwise MP3.
+        in which to prefer file formats. If set to ['flac', 'ogg', 'mp3'], for
+        example, FLAC files will be downloaded if available - if not, Ogg
+        files, and if those aren't available, MP3 files.
         
         Print progress along the way if `verbose` is set to True.
 
@@ -283,11 +293,7 @@ class Soundtrack(object):
         if formatOrder:
             formatOrder = [extension.lower() for extension in formatOrder]
             if not set(self.availableFormats) & set(formatOrder):
-                if verbose:
-                    print("The soundtrack \"{}\" does not seem to be available in {}.".format(
-                          self.id,
-                          "that format" if len(formatOrder) == 1 else "any of those formats"))
-                return
+                raise NonexistentFormatsError(self, formatOrder)
 
         if verbose and not self._isLoaded('songs'):
             print("Getting song list...")
@@ -485,13 +491,29 @@ if __name__ == '__main__':
                         return 1
                 except NonexistentSoundtrackError:
                     searchResults = search(searchTerm)
-                    print("\nThe soundtrack \"{}\" does not seem to exist.".format(soundtrack), file=sys.stderr)
+                    print("The soundtrack \"{}\" does not seem to exist.".format(soundtrack), file=sys.stderr)
 
                     if searchResults: # aww yeah we gon' do some searchin'
-                        print(file=sys.stderr)
-                        print("These exist, though:", file=sys.stderr)
+                        print("\nThese exist, though:", file=sys.stderr)
                         for soundtrack in searchResults:
                             print(soundtrack.id, file=sys.stderr)
+                    
+                    return 1
+                except NonexistentFormatsError as e:
+                    s = ("Format{} not available. "
+                         "The soundtrack \"{}\" is only available in the ").format(
+                        "" if len(formatOrder) == 1 else "s", soundtrack)
+                    
+                    formats = e.soundtrack.availableFormats
+                    if len(formats) == 1:
+                        s += "\"{}\" format.".format(formats[0])
+                    else:
+                        s += "{}{} and \"{}\" formats.".format(
+                            ", ".join('"{}"'.format(extension) for extension in formats[:-1]),
+                            "," if len(formats) > 2 else "",
+                            formats[-1])
+                    
+                    print(s, file=sys.stderr)
                     
                     return 1
                 except KeyboardInterrupt:
