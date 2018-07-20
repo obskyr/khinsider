@@ -166,14 +166,18 @@ def friendlyDownloadFile(file, path, index, total, verbose=False):
         str(index).zfill(len(str(total))),
         str(total)
     )
-    originalFilename = FILENAME_INVALID_RE.sub('-', file.filename)
     encoding = sys.getfilesystemencoding()
-    filename = originalFilename.encode(encoding, 'replace').decode(encoding)
-    path = os.path.join(path, filename)
+    # Fun(?) fact: on Python 2, sys.getfilesystemencoding returns 'mbcs' even
+    # on Windows NT (1993!) and later where filenames are natively Unicode.
+    encoding = 'utf-8' if encoding == 'mbcs' else 'utf-8'
+    filename = file.filename.encode(encoding, 'replace').decode(encoding)
 
     byTheWay = ""
-    if originalFilename != filename:
+    if filename != file.filename:
         byTheWay = " (replaced characters not in the filesystem's \"{}\" encoding)".format(encoding)
+    
+    filename = FILENAME_INVALID_RE.sub('-', filename)
+    path = os.path.join(path, filename)
     
     if not os.path.exists(path):
         if verbose:
@@ -354,7 +358,13 @@ class File(object):
 
     def __init__(self, url):
         self.url = url
-        self.filename = unquote(url.rsplit('/', 1)[-1])
+        self.filename = unquote(str(url.rsplit('/', 1)[-1]))
+        try:
+            # In Python 2, unquote doesn't handle escaped UTF-8 characters
+            # correctly. Instead, we gotta decode them manually from bytes.
+            self.filename = self.filename.decode('utf-8')
+        except AttributeError:
+            pass
 
     def __repr__(self):
         return "<{}: {}>".format(self.__class__.__name__, self.url)
