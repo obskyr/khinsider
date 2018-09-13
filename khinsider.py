@@ -358,10 +358,18 @@ class File(object):
 
     def __init__(self, url):
         self.url = url
-        self.filename = unquote(str(url.rsplit('/', 1)[-1]))
+
+        try:
+            url = str(url)
+        except UnicodeError:
+            # Python 2's quote and unquote work with bytestrings.
+            url = url.encode('utf-8')
+        # str('/') makes sure the string doesn't get
+        # converted to a Unicode string on Python 2.
+        self.filename = unquote(url.rsplit(str('/'), 1)[-1])
         try:
             # In Python 2, unquote doesn't handle escaped UTF-8 characters
-            # correctly. Instead, we gotta decode them manually from bytes.
+            # automatically, so we gotta decode them manually from bytes.
             self.filename = self.filename.decode('utf-8')
         except AttributeError:
             pass
