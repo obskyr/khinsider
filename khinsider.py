@@ -36,7 +36,7 @@ class Silence(object):
 # rest of the module, and doesn't even run if the module isn't run by itself.)
 
 if __name__ == '__main__':
-    import imp # To check modules without importing them.
+    import importlib # To check modules without importing them.
 
     # User-friendly name, import name, pip specification.
     requiredModules = [
@@ -46,7 +46,7 @@ if __name__ == '__main__':
 
     def moduleExists(module):
         try:
-            imp.find_module(module[1])
+            importlib.find_module(module[1])
         except ImportError:
             return False
         return True
@@ -88,7 +88,7 @@ if __name__ == '__main__':
     needed = neededInstalls()
     if needed:
         try:
-            imp.find_module('pip')
+            importlib.find_module('pip')
         except ImportError:
             print("You don't seem to have pip installed!")
             print("Get it from https://pip.readthedocs.org/en/latest/installing.html")
