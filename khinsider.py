@@ -36,7 +36,18 @@ class Silence(object):
 # rest of the module, and doesn't even run if the module isn't run by itself.)
 
 if __name__ == '__main__':
-    import imp # To check modules without importing them.
+    # To check for the existence of modules without importing them.
+    # Apparently imp and importlib are a forest of deprecation!
+    # The API was changed once in 3.3 (deprecating imp),
+    # and then again in 3.4 (deprecating the 3.3 API).
+    # So.... we have to do this dance to avoid deprecation warnings.
+    try:
+        try:
+            from importlib.util import find_spec as find_module # Python 3.4+
+        except ImportError:
+            from importlib import find_loader as find_module # Python 3.3
+    except ImportError:
+        from imp import find_module # Python 2
 
     # User-friendly name, import name, pip specification.
     requiredModules = [
@@ -44,16 +55,17 @@ if __name__ == '__main__':
         ['Beautiful Soup 4', 'bs4', 'beautifulsoup4 >= 4.4.0, < 5.0.0']
     ]
 
-    def moduleExists(module):
+    def moduleExists(name):
         try:
-            imp.find_module(module[1])
+            result = find_module(name)
         except ImportError:
             return False
-        return True
+        else:
+            return result is not None
     def neededInstalls(requiredModules=requiredModules):
         uninstalledModules = []
         for module in requiredModules:
-            if not moduleExists(module):
+            if not moduleExists(module[1]):
                 uninstalledModules.append(module)
         return uninstalledModules
 
@@ -77,9 +89,9 @@ if __name__ == '__main__':
                           "You may need to run the script as an administrator "
                           "or superuser.".format(module[0]),
                           file=sys.stderr)
-                    print ("You can also try to install the package manually "
-                           "(pip install \"{}\")".format(module[2]),
-                           file=sys.stderr)
+                    print("You can also try to install the package manually "
+                          "(pip install \"{}\")".format(module[2]),
+                          file=sys.stderr)
                 raise e
     def installRequiredModules(needed=None, verbose=True):
         needed = neededInstalls() if needed is None else needed
@@ -87,15 +99,13 @@ if __name__ == '__main__':
 
     needed = neededInstalls()
     if needed:
-        try:
-            imp.find_module('pip')
-        except ImportError:
-            print("You don't seem to have pip installed!")
-            print("Get it from https://pip.readthedocs.org/en/latest/installing.html")
-            sys.exit(1)
-        else:
+        if moduleExists('pip'):
             # Needed to call pip the official way.
             import subprocess
+        else:
+            print("You don't seem to have pip installed!", file=sys.stderr)
+            print("Get it from https://pip.readthedocs.org/en/latest/installing.html", file=sys.stderr)
+            sys.exit(1)
 
     try:
         installRequiredModules(needed)
