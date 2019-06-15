@@ -212,6 +212,9 @@ def friendlyDownloadFile(file, path, index, total, verbose=False):
     return True
 
 
+class KhinsiderError(Exception):
+    pass
+
 class SoundtrackError(Exception):
     def __init__(self, soundtrack):
         self.soundtrack = soundtrack
@@ -401,10 +404,16 @@ def download(soundtrackId, path='', makeDirs=True, formatOrder=None, verbose=Fal
     return Soundtrack(soundtrackId).download(path, makeDirs, formatOrder, verbose)
 
 
+class SearchError(KhinsiderError):
+    pass
+
 def search(term):
     """Return a list of Soundtrack objects for the search term `term`."""
     soup = getSoup(urljoin(BASE_URL, 'search'), params={'search': term})
-    anchors = soup('p')[1]('a')
+    try:
+        anchors = soup('p')[1]('a')
+    except IndexError:
+        raise SearchError(soup.find('p').get_text(strip=True))
     soundtrackIds = [a['href'].split('/')[-1] for a in anchors]
 
     return [Soundtrack(id) for id in soundtrackIds]
@@ -503,14 +512,18 @@ if __name__ == '__main__':
 
         try:
             if onlySearch:
-                searchResults = search(searchTerm)
-                if searchResults:
-                    print("Soundtracks found (to download, "
-                          "run \"{} soundtrack-name\"):".format(SCRIPT_NAME))
-                    for soundtrack in searchResults:
-                        print(soundtrack.id)
+                try:
+                    searchResults = search(searchTerm)
+                except SearchError as e:
+                    print("Couldn't search. {}".format(e.args[0]), file=sys.stderr)
                 else:
-                    print("No soundtracks found.")
+                    if searchResults:
+                        print("Soundtracks found (to download, "
+                              "run \"{} soundtrack-name\"):".format(SCRIPT_NAME))
+                        for soundtrack in searchResults:
+                            print(soundtrack.id)
+                    else:
+                        print("No soundtracks found.")
             else:
                 try:
                     success = download(soundtrack, outPath, formatOrder=formatOrder, verbose=True)
@@ -518,13 +531,19 @@ if __name__ == '__main__':
                         print("\nNot all files could be downloaded.", file=sys.stderr)
                         return 1
                 except NonexistentSoundtrackError:
-                    searchResults = search(searchTerm)
+                    try:
+                        searchResults = search(searchTerm)
+                    except SearchError:
+                        searchResults = None
                     print("The soundtrack \"{}\" does not seem to exist.".format(soundtrack), file=sys.stderr)
 
                     if searchResults: # aww yeah we gon' do some searchin'
                         print("\nThese exist, though:", file=sys.stderr)
                         for soundtrack in searchResults:
                             print(soundtrack.id, file=sys.stderr)
+                    elif searchResults is None:
+                        print("A search for \"{}\" could not be performed either. "
+                              "It may be too short.".format(searchTerm), file=sys.stderr)
                     
                     return 1
                 except NonexistentFormatsError as e:
