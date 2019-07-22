@@ -17,6 +17,10 @@ try:
 except ImportError: # Python 2
     from urlparse import unquote, urljoin, urlsplit
 
+try: # Python 2
+    from os import getcwdu as getcwd
+except ImportError:
+    from os import getcwd
 
 class Silence(object):
     def __enter__(self):
@@ -305,7 +309,7 @@ class Soundtrack(object):
 
         Return True if all files were downloaded successfully, False if not.
         """
-        path = os.path.join(os.getcwd(), path)
+        path = os.path.join(getcwd(), path)
         path = os.path.abspath(os.path.realpath(path))
         if formatOrder:
             formatOrder = [extension.lower() for extension in formatOrder]
