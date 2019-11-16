@@ -361,7 +361,7 @@ class Song(object):
 
     @lazyProperty
     def files(self):
-        anchors = [p.find('a') for p in self._soup('p', string=re.compile(r'^\s*Click here to download'))]
+        anchors = [p for p in self._soup('a', href=re.compile("^http://23.237.126.42/ost"))]
         return [File(urljoin(self.url, a['href'])) for a in anchors]
 
 
