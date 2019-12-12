@@ -398,9 +398,27 @@ class File(object):
     
     def download(self, path):
         """Download the file to `path`."""
-        response = requests.get(self.url, timeout=10)
+        response = requests.get(self.url, timeout=10, stream=True)
+
+        """Skip web pages and non-media files"""
+        if("content-length" not in response.headers.keys() and response.headers["connection"] == "close"):
+            print("Skipping: Not a song or image file")
+            return
+
+        filesize = int(response.headers["content-length"])
+        bytes_downloaded = 0
+        data = b''
+        for chunk in response.iter_content(chunk_size=1048576, decode_unicode=False):
+            data += chunk
+            bytes_downloaded += len(chunk)
+            print("\rProgress: {:4.1f}%".format(bytes_downloaded/filesize * 100), end="")
+            sys.stdout.flush()
+        if (bytes_downloaded == filesize):
+            print()
         with open(path, 'wb') as outFile:
-            outFile.write(response.content)
+            outFile.write(data)
+
+
 
 
 def download(soundtrackId, path='', makeDirs=True, formatOrder=None, verbose=False):
