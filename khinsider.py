@@ -319,8 +319,12 @@ class Soundtrack(object):
         if verbose and not self._isLoaded('songs'):
             print("Getting song list...")
         files = []
-        for song in self.songs:
+        songsCount = len(self.songs)
+        for (index, song) in enumerate(self.songs):
             files.append(getAppropriateFile(song, formatOrder))
+            if verbose:
+                print("\r{}/{}".format(index+1, songsCount), end="")
+        print()
         files.extend(self.images)
         totalFiles = len(files)
 
