@@ -290,7 +290,7 @@ class Soundtrack(object):
     
     @lazyProperty
     def images(self):
-        anchors = self._contentSoup('p')[1]('a')
+        anchors = [a for a in self._contentSoup('p')[1]('a') if a.find('img')]
         urls = [a['href'] for a in anchors]
         images = [File(urljoin(self.url, url)) for url in urls]
         return images
