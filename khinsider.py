@@ -361,7 +361,9 @@ class Song(object):
 
     @lazyProperty
     def files(self):
-        anchors = self._soup('a', href=re.compile(r'^https?://[^/]+/ost/.+$'))
+        # The path used to be /ost/..., and was changed to
+        # /soundtracks/... - but who knows? It might change back!
+        anchors = self._soup('a', href=re.compile(r'^https?://[^/]+/(?:soundtracks|ost)/.+$'))
         return [File(urljoin(self.url, a['href'])) for a in anchors]
 
 
