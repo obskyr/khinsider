@@ -5,7 +5,7 @@
 From the command line:
 
 ```cmd
-khinsider.py jumping-flash
+py -3 khinsider.py jumping-flash
 ```
 
 As an import:
@@ -31,7 +31,7 @@ If you want, you can also add another parameter as the output folder, but that's
 You can also download other file formats (if available), like FLAC or OGG, as following:
 
 ```cmd
-khinsider.py --format flac mother-3
+py -3 khinsider.py --format flac mother-3
 ```
 
 If you don't want to go to the actual site to look for soundtracks, you can also just type a search term as the first parameter(s), and provided it's not a valid soundtrack, `khinsider.py` will give you a list of soundtracks matching that term.
