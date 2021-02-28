@@ -153,7 +153,10 @@ def lazyProperty(func):
 
 def getSoup(*args, **kwargs):
     r = requests.get(*args, **kwargs)
+    return toSoup(r)
 
+
+def toSoup(r):
     # Fix errors in khinsider's HTML
     removeRe = re.compile(br"^</td>\s*$", re.MULTILINE)
     
@@ -415,7 +418,12 @@ class SearchError(KhinsiderError):
 
 def search(term):
     """Return a list of Soundtrack objects for the search term `term`."""
-    soup = getSoup(urljoin(BASE_URL, 'search'), params={'search': term})
+    r = requests.get(urljoin(BASE_URL, 'search'), params={'search': term})
+    path = urlsplit(r.url).path
+    if path.split('/', 2)[1] == 'game-soundtracks':
+        return [Soundtrack(path.rsplit('/', 1)[-1])]
+
+    soup = toSoup(r)
     try:
         anchors = soup('p')[1]('a')
     except IndexError:
