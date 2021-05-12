@@ -323,11 +323,14 @@ class Soundtrack(object):
             print("Getting song list...")
         files = []
         songsCount = len(self.songs)
-        for (index, song) in enumerate(self.songs):
-            files.append(getAppropriateFile(song, formatOrder))
-            if verbose:
+        if verbose and sys.stdout.isatty():
+            for (index, song) in enumerate(self.songs):
+                files.append(getAppropriateFile(song, formatOrder))
                 print("\r{}/{}".format(index+1, songsCount), end="")
-        print()
+            print()
+        else:
+            for song in self.songs:
+                files.append(getAppropriateFile(song, formatOrder))
         files.extend(self.images)
         totalFiles = len(files)
 
@@ -405,27 +408,30 @@ class File(object):
     
     def download(self, path):
         """Download the file to `path`."""
-        response = requests.get(self.url, timeout=10, stream=True)
+        if not sys.stdout.isatty():
+            response = requests.get(self.url, timeout=10)
+            with open(path, 'wb') as outFile:
+                outFile.write(response.content)
+        else:
+            response = requests.get(self.url, timeout=10, stream=True)
 
-        """Skip web pages and non-media files"""
-        if("content-length" not in response.headers.keys() and response.headers["connection"] == "close"):
-            print("Skipping: Not a song or image file")
-            return
+            """Skip web pages and non-media files"""
+            if("content-length" not in response.headers.keys() and response.headers["connection"] == "close"):
+                print("Skipping: Not a song or image file")
+                return
 
-        filesize = int(response.headers["content-length"])
-        bytes_downloaded = 0
-        data = b''
-        for chunk in response.iter_content(chunk_size=1048576, decode_unicode=False):
-            data += chunk
-            bytes_downloaded += len(chunk)
-            print("\rProgress: {:4.1f}%".format(bytes_downloaded/filesize * 100), end="")
-            sys.stdout.flush()
-        if (bytes_downloaded == filesize):
-            print()
-        with open(path, 'wb') as outFile:
-            outFile.write(data)
-
-
+            filesize = int(response.headers["content-length"])
+            bytes_downloaded = 0
+            data = b''
+            for chunk in response.iter_content(chunk_size=1048576, decode_unicode=False):
+                data += chunk
+                bytes_downloaded += len(chunk)
+                print("\rProgress: {:4.1f}%".format(bytes_downloaded/filesize * 100), end="")
+                sys.stdout.flush()
+            if (bytes_downloaded == filesize):
+                print()
+            with open(path, 'wb') as outFile:
+                outFile.write(data)
 
 
 def download(soundtrackId, path='', makeDirs=True, formatOrder=None, verbose=False):
