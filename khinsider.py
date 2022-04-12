@@ -319,9 +319,15 @@ class Soundtrack(object):
     
     @lazyProperty
     def images(self):
-        anchors = [a for a in self._contentSoup('p')[1]('a') if a.find('img')]
+        table = self._contentSoup.find('table')
+        if not table:
+            # Currently, the table is always present, but if it's ever removed
+            # for imageless albums, it should be handled gracefully.
+            return []
+        anchors = [a for a in table('a') if a.find('img')]
         urls = [a['href'] for a in anchors]
         images = [File(urljoin(self.url, url)) for url in urls]
+        print(images)
         return images
 
     def download(self, path='', makeDirs=True, formatOrder=None, verbose=False):
