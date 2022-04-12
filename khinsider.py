@@ -207,17 +207,28 @@ def friendlyDownloadFile(file, path, index, total, verbose=False):
     path = os.path.join(path, filename)
     
     if not os.path.exists(path):
-        if verbose:
-            unicodePrint("Downloading {}: {}{}...".format(numberStr, filename, byTheWay))
         for triesElapsed in range(3):
             if verbose and triesElapsed:
                 unicodePrint("Couldn't download {}. Trying again...".format(filename), file=sys.stderr)
+            gen = file.download(path)
             try:
-                file.download(path)
+                if verbose and sys.stdout.isatty():
+                    for update in gen:
+                        unicodePrint("\rDownloading {}: {}{space}{} {: >6.2f}%...".format(
+                            numberStr, filename, byTheWay, update, space = " " if byTheWay else ""), end="")
+                        sys.stdout.flush()
+                if not sys.stdout.isatty():
+                    if verbose:
+                        unicodePrint("Downloading {}: {}{}...".format(numberStr, filename, byTheWay), end="")
+                    for update in gen:
+                        pass
             except (requests.ConnectionError, requests.Timeout):
                 pass
             else:
                 break
+            finally:
+                if verbose:
+                    print()
         else:
             if verbose:
                 unicodePrint("Couldn't download {}. Skipping over.".format(filename), file=sys.stderr)
@@ -335,8 +346,15 @@ class Soundtrack(object):
                 raise NonexistentFormatsError(self, formatOrder)
 
         files = []
-        for song in self.songs:
-            files.append(getAppropriateFile(song, formatOrder))
+        songsCount = len(self.songs)
+        if verbose and sys.stdout.isatty():
+            for (index, song) in enumerate(self.songs):
+                files.append(getAppropriateFile(song, formatOrder))
+                print("\r{}/{}".format(index+1, songsCount), end="")
+            print()
+        else:
+            for song in self.songs:
+                files.append(getAppropriateFile(song, formatOrder))
         files.extend(self.images)
         totalFiles = len(files)
 
@@ -413,10 +431,25 @@ class File(object):
         return "<{}: {}>".format(self.__class__.__name__, self.url)
     
     def download(self, path):
-        """Download the file to `path`."""
-        response = requests.get(self.url, timeout=10)
+        """Download the file to `path`.
+        Yields current progress of download.
+        """
+        response = requests.get(self.url, timeout=10, stream=True)
+
+        """Skip web pages and non-media files"""
+        if("content-length" not in response.headers.keys() and response.headers["connection"] == "close"):
+            print("Skipping: Not a song or image file")
+            return
+        filesize = int(response.headers["content-length"])
+        bytes_downloaded = 0
+        data = b''
+        yield 0
+        for chunk in response.iter_content(chunk_size=1048576, decode_unicode=False):
+            data += chunk
+            bytes_downloaded += len(chunk)
+            yield bytes_downloaded/filesize * 100
         with open(path, 'wb') as outFile:
-            outFile.write(response.content)
+            outFile.write(data)
 
 
 def download(soundtrackId, path='', makeDirs=True, formatOrder=None, verbose=False):
