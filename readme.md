@@ -1,14 +1,14 @@
 # khinsider.py
 
-`khinsider.py` is a [Python](https://www.python.org/) interface for getting [khinsider](http://downloads.khinsider.com/) soundtracks. It makes khinsider mass downloads a breeze. It's easy to use - check it!
+`khinsider.py` is a [Python](https://www.python.org/) interface and script for getting [khinsider](http://downloads.khinsider.com/) soundtracks. It makes khinsider mass downloads a breeze. It's easy to use - check it!
 
-From the command line:
+From the command line (i.e. regular usage):
 
 ```cmd
 khinsider.py jumping-flash
 ```
 
-As an import:
+As an import (for when you're programming):
 
 ```python
 import khinsider
