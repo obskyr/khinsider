@@ -196,6 +196,11 @@ def friendlyDownloadFile(file, path, index, total, verbose=False):
         str(index).zfill(len(str(total))),
         str(total)
     )
+
+    if file is None and verbose:
+        print("Song {} is nonexistent (404: Not Found). Skipping over.".format(numberStr), file=sys.stderr)
+        return False
+
     encoding = sys.getfilesystemencoding()
     # Fun(?) fact: on Python 2, sys.getfilesystemencoding returns 'mbcs' even
     # on Windows NT (1993!) and later where filenames are natively Unicode.
@@ -235,6 +240,9 @@ def friendlyDownloadFile(file, path, index, total, verbose=False):
 class KhinsiderError(Exception):
     pass
 
+class NonexistentSongError(KhinsiderError):
+    pass
+
 class SoundtrackError(Exception):
     def __init__(self, soundtrack):
         self.soundtrack = soundtrack
@@ -262,7 +270,7 @@ class Soundtrack(object):
     Properties:
     * id:     The soundtrack's unique ID, used at the end of its URL.
     * url:    The full URL of the soundtrack.
-    * title:  The textual title of the soundtrack.
+    * name:   The textual title of the soundtrack.
     * availableFormats: A list of the formats the soundtrack is available in.
     * songs:  A list of Song objects representing the songs in the soundtrack.
     * images: A list of File objects representing the images in the soundtrack.
@@ -289,7 +297,7 @@ class Soundtrack(object):
         return contentSoup
 
     @lazyProperty
-    def title(self):
+    def name(self):
         return self._contentSoup.find('h2').get_text(strip=True)
 
     @lazyProperty
@@ -341,7 +349,10 @@ class Soundtrack(object):
             print("Getting song list...")
         files = []
         for song in self.songs:
-            files.append(getAppropriateFile(song, formatOrder))
+            try:
+                files.append(getAppropriateFile(song, formatOrder))
+            except NonexistentSongError:
+                files.append(None)
         files.extend(self.images)
         totalFiles = len(files)
 
@@ -374,6 +385,9 @@ class Song(object):
     
     @lazyProperty
     def _soup(self):
+        r = requests.get(self.url, timeout=10)
+        if r.url.rsplit('/', 1)[-1] == '404':
+            raise NonexistentSongError("Nonexistent song page (404).")
         return getSoup(self.url)
 
     @lazyProperty
@@ -429,8 +443,8 @@ def download(soundtrackId, path='', makeDirs=True, formatOrder=None, verbose=Fal
     See Soundtrack.download for more information.
     """
     soundtrack = Soundtrack(soundtrackId)
-    soundtrack.title # To conistently always load the content in advance.
-    path = to_valid_filename(soundtrack.title) if path is None else path
+    soundtrack.name # To conistently always load the content in advance.
+    path = to_valid_filename(soundtrack.name) if path is None else path
     if verbose:
         unicodePrint("Downloading to \"{}\".".format(path))
     return soundtrack.download(path, makeDirs, formatOrder, verbose)
@@ -467,7 +481,7 @@ def printSearchResults(searchResults, file=sys.stdout):
     padLen = max(len(x.id) for x in searchResults)
     s = ""
     for soundtrack in searchResults:
-        s += "{} {}. {}\n".format(soundtrack.id, '.' * (padLen - len(soundtrack.id)), soundtrack.title)
+        s += "{} {}. {}\n".format(soundtrack.id, '.' * (padLen - len(soundtrack.id)), soundtrack.name)
     unicodePrint(s, end="", file=file)
 
 # --- And now for the execution. ---
