@@ -267,9 +267,9 @@ class Soundtrack(object):
     @lazyProperty
     def _contentSoup(self):
         soup = getSoup(self.url)
-        contentSoup = soup.find(id='EchoTopic')
+        contentSoup = soup.find(id='pageContent')
         if contentSoup.find('p').string == "No such album":
-            # The EchoTopic and p exist even if the soundtrack doesn't, so no
+            # The pageContent and p exist even if the soundtrack doesn't, so no
             # need for error handling here.
             raise NonexistentSoundtrackError(self)
         return contentSoup
