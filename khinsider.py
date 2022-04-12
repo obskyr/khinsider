@@ -126,6 +126,16 @@ BASE_URL = 'https://downloads.khinsider.com/'
 # Although some of these are valid on Linux, keeping this the same
 # across systems is nice for consistency AND it works on WSL.
 FILENAME_INVALID_RE = re.compile(r'[<>:"/\\|?*]')
+def to_valid_filename(s):
+    # Windows's Explorer doens't handle filenames that end in ' ' or '.'.
+    s = s.rstrip(' .')
+
+    if s in {'', '.', '..', '~', 'CON', 'PRN', 'AUX', 'NUL', 'COM1', 'COM2',
+             'COM3', 'COM4', 'COM5', 'COM6', 'COM7', 'COM8', 'COM9', 'LPT1',
+             'LPT2', 'LPT3', 'LPT4', 'LPT5', 'LPT6', 'LPT7', 'LPT8', 'LPT9'}:
+        return s + '_'
+
+    return FILENAME_INVALID_RE.sub('-', s)
 
 
 # Different printin' for different Pythons.
@@ -193,7 +203,7 @@ def friendlyDownloadFile(file, path, index, total, verbose=False):
     if filename != file.filename:
         byTheWay = " (replaced characters not in the filesystem's \"{}\" encoding)".format(encoding)
     
-    filename = FILENAME_INVALID_RE.sub('-', filename)
+    filename = to_valid_filename(filename)
     path = os.path.join(path, filename)
     
     if not os.path.exists(path):
@@ -249,6 +259,7 @@ class Soundtrack(object):
     Properties:
     * id:     The soundtrack's unique ID, used at the end of its URL.
     * url:    The full URL of the soundtrack.
+    * title:  The textual title of the soundtrack.
     * availableFormats: A list of the formats the soundtrack is available in.
     * songs:  A list of Song objects representing the songs in the soundtrack.
     * images: A list of File objects representing the images in the soundtrack.
@@ -273,6 +284,10 @@ class Soundtrack(object):
             # need for error handling here.
             raise NonexistentSoundtrackError(self)
         return contentSoup
+
+    @lazyProperty
+    def title(self):
+        return self._contentSoup.find('h2').get_text(strip=True)
 
     @lazyProperty
     def availableFormats(self):
@@ -319,8 +334,6 @@ class Soundtrack(object):
             if not set(self.availableFormats) & set(formatOrder):
                 raise NonexistentFormatsError(self, formatOrder)
 
-        if verbose and not self._isLoaded('songs'):
-            print("Getting song list...")
         files = []
         for song in self.songs:
             files.append(getAppropriateFile(song, formatOrder))
@@ -410,11 +423,17 @@ def download(soundtrackId, path='', makeDirs=True, formatOrder=None, verbose=Fal
     """Download the soundtrack with the ID `soundtrackId`.
     See Soundtrack.download for more information.
     """
-    return Soundtrack(soundtrackId).download(path, makeDirs, formatOrder, verbose)
+    soundtrack = Soundtrack(soundtrackId)
+    soundtrack.songs # To conistently always load the content in advance.
+    path = to_valid_filename(soundtrack.title) if path is None else path
+    if verbose:
+        unicodePrint("Downloading to \"{}\".".format(path))
+    return soundtrack.download(path, makeDirs, formatOrder, verbose)
 
 
 class SearchError(KhinsiderError):
     pass
+
 
 def search(term):
     """Return a list of Soundtrack objects for the search term `term`."""
@@ -428,9 +447,23 @@ def search(term):
         anchors = soup('p')[1]('a')
     except IndexError:
         raise SearchError(soup.find('p').get_text(strip=True))
-    soundtrackIds = [a['href'].split('/')[-1] for a in anchors]
+    soundtrackParams = [(a['href'].split('/')[-1], a.get_text(strip=True)) for a in anchors]
 
-    return [Soundtrack(id) for id in soundtrackIds]
+    soundtracks = []
+    for id, title in soundtrackParams:
+        curSoundtrack = Soundtrack(id)
+        curSoundtrack._lazy_title = title
+        soundtracks.append(curSoundtrack)
+
+    return soundtracks
+
+
+def printSearchResults(searchResults, file=sys.stdout):
+    padLen = max(len(x.id) for x in searchResults)
+    s = ""
+    for soundtrack in searchResults:
+        s += "{} {}. {}\n".format(soundtrack.id, '.' * (padLen - len(soundtrack.id)), soundtrack.title)
+    unicodePrint(s, end="", file=file)
 
 # --- And now for the execution. ---
 
@@ -505,7 +538,7 @@ if __name__ == '__main__':
         m = urlRe.match(soundtrack)
         soundtrack = m.group('soundtrack') if m is not None else soundtrack
 
-        outPath = arguments.outPath if arguments.outPath is not None else soundtrack
+        outPath = arguments.outPath # Can be None; handled in download().
 
         # I think this makes the most sense for people who aren't used to the
         # command line - this'll yield useful results even if you just type
@@ -534,8 +567,7 @@ if __name__ == '__main__':
                     if searchResults:
                         print("Soundtracks found (to download, "
                               "run \"{} soundtrack-name\"):".format(SCRIPT_NAME))
-                        for soundtrack in searchResults:
-                            print(soundtrack.id)
+                        printSearchResults(searchResults)
                     else:
                         print("No soundtracks found.")
             else:
@@ -553,8 +585,7 @@ if __name__ == '__main__':
 
                     if searchResults: # aww yeah we gon' do some searchin'
                         print("\nThese exist, though:", file=sys.stderr)
-                        for soundtrack in searchResults:
-                            print(soundtrack.id, file=sys.stderr)
+                        printSearchResults(searchResults, file=sys.stderr)
                     elif searchResults is None:
                         print("A search for \"{}\" could not be performed either. "
                               "It may be too short.".format(searchTerm), file=sys.stderr)
