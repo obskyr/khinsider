@@ -165,15 +165,18 @@ def getSoup(*args, **kwargs):
     r = requests.get(*args, **kwargs)
     return toSoup(r)
 
-
+REMOVE_RE = re.compile(br"^</td>\s*$", re.MULTILINE)
+BAD_AMPERSAND_RE = re.compile(br"&#([^0-9x]|x[^0-9A-Fa-f])")
 def toSoup(r):
-    # Fix errors in khinsider's HTML
-    removeRe = re.compile(br"^</td>\s*$", re.MULTILINE)
-    
+    content = r.content
+    # Fix errors in khinsider's HTML.
+    content = REMOVE_RE.sub(b'', content)
+    content = BAD_AMPERSAND_RE.sub(b'&amp;#\1', content)
+
     # BS4 outputs unsuppressable error messages when it can't
     # decode the input bytes properly. This... suppresses them.
     with Silence():
-        return BeautifulSoup(re.sub(removeRe, b'', r.content), 'html.parser')
+        return BeautifulSoup(content, 'html.parser')
 
 
 def getAppropriateFile(song, formatOrder):
@@ -334,6 +337,8 @@ class Soundtrack(object):
             if not set(self.availableFormats) & set(formatOrder):
                 raise NonexistentFormatsError(self, formatOrder)
 
+        if verbose and not self._isLoaded('songs'):
+            print("Getting song list...")
         files = []
         for song in self.songs:
             files.append(getAppropriateFile(song, formatOrder))
@@ -424,7 +429,7 @@ def download(soundtrackId, path='', makeDirs=True, formatOrder=None, verbose=Fal
     See Soundtrack.download for more information.
     """
     soundtrack = Soundtrack(soundtrackId)
-    soundtrack.songs # To conistently always load the content in advance.
+    soundtrack.title # To conistently always load the content in advance.
     path = to_valid_filename(soundtrack.title) if path is None else path
     if verbose:
         unicodePrint("Downloading to \"{}\".".format(path))
