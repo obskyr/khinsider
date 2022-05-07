@@ -462,25 +462,23 @@ class SearchError(KhinsiderError):
 
 def search(term):
     """Return a list of Soundtrack objects for the search term `term`."""
-    r = requests.get(urljoin(BASE_URL, 'search'), params={'search': term})
+    r = requests.get(urljoin(BASE_URL, "search"), params={"search": term})
     path = urlsplit(r.url).path
-    if path.split('/', 2)[1] == 'game-soundtracks':
-        return [Soundtrack(path.rsplit('/', 1)[-1])]
+    if path.split("/", 2)[1] == "game-soundtracks":
+        return [Soundtrack(path.rsplit("/", 1)[-1])]
 
     soup = toSoup(r)
+    anchors = []
     try:
-        anchors = soup('p')[1]('a')
+        rows = soup("table")[0]("tr")[1:]
+        for r in rows:
+            anchors.append(r('a')[0]['href'])
     except IndexError:
-        raise SearchError(soup.find('p').get_text(strip=True))
-    soundtrackParams = [(a['href'].split('/')[-1], a.get_text(strip=True)) for a in anchors]
+        raise SearchError(soup.find("p").get_text(strip=True))
+    
+    soundtrackIds = [a.split("/")[-1] for a in anchors]
 
-    soundtracks = []
-    for id, title in soundtrackParams:
-        curSoundtrack = Soundtrack(id)
-        curSoundtrack._lazy_title = title
-        soundtracks.append(curSoundtrack)
-
-    return soundtracks
+    return [Soundtrack(id) for id in soundtrackIds]
 
 
 def printSearchResults(searchResults, file=sys.stdout):
