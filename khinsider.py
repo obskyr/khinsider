@@ -496,6 +496,8 @@ if __name__ == '__main__':
     import argparse
 
     SCRIPT_NAME = os.path.split(sys.argv[0])[-1]
+    REPORT_STR = ("If it isn't too much to ask, please report to "
+                  "https://github.com/obskyr/khinsider/issues.")
 
     # Tiny details!
     class KindArgumentParser(argparse.ArgumentParser):
@@ -587,7 +589,11 @@ if __name__ == '__main__':
                 try:
                     searchResults = search(searchTerm)
                 except SearchError as e:
-                    print("Couldn't search. {}".format(e.args[0]), file=sys.stderr)
+                    if re.match(r"^Found [0-9]+ matching albums.$", e.args[0]):
+                        errorStr = "Couldn't search! {}".format(REPORT_STR)
+                    else:
+                        errorStr = "Couldn't search. {}".format(e.args[0])
+                    print(errorStr, file=sys.stderr)
                 else:
                     if searchResults:
                         print("Soundtracks found (to download, "
@@ -642,9 +648,7 @@ if __name__ == '__main__':
             return 1
         except Exception:
             print(file=sys.stderr)
-            print("An unexpected error occurred! "
-                  "If it isn't too much to ask, please report to "
-                  "https://github.com/obskyr/khinsider/issues.",
+            print("An unexpected error occurred! " + REPORT_STR,
                   file=sys.stderr)
             print("Attach the following error message:", file=sys.stderr)
             print(file=sys.stderr)
