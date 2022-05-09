@@ -11,6 +11,7 @@ import os
 import re
 import sys
 from functools import wraps
+from itertools import chain
 
 try:
     from urllib.parse import unquote, urljoin, urlsplit
@@ -461,33 +462,54 @@ class SearchError(KhinsiderError):
 
 
 def search(term):
-    """Return a list of Soundtrack objects for the search term `term`."""
+    """Return a tuple of two lists of Soundtrack objects for the search term
+    `term`. The first tuple contains album name results, and the second song
+    name results.
+    """
     r = requests.get(urljoin(BASE_URL, 'search'), params={'search': term})
     path = urlsplit(r.url).path
     if path.split('/', 2)[1] == 'game-soundtracks':
         return [Soundtrack(path.rsplit('/', 1)[-1])]
 
     soup = toSoup(r)
-    try:
-        anchors = soup('p')[1]('a')
-    except IndexError:
+
+    tables = soup('table', class_='albumList')
+    if not tables:
         raise SearchError(soup.find('p').get_text(strip=True))
+
+    soundtracks = [soundtracksInSearchTable(table) for table in tables]
+    if len(soundtracks) == 1:
+        if "song" in soup.find(id='pageContent').find('p').get_text():
+            soundtracks.insert(0, [])
+        else:
+            soundtracks.append([])
+
+    return soundtracks
+
+def soundtracksInSearchTable(table):
+    anchors = (tr('td')[1].find('a') for tr in table('tr')[1:])
     soundtrackParams = [(a['href'].split('/')[-1], a.get_text(strip=True)) for a in anchors]
 
     soundtracks = []
-    for id, title in soundtrackParams:
+    for id, name in soundtrackParams:
         curSoundtrack = Soundtrack(id)
-        curSoundtrack._lazy_title = title
+        curSoundtrack._lazy_name = name
         soundtracks.append(curSoundtrack)
 
     return soundtracks
 
-
 def printSearchResults(searchResults, file=sys.stdout):
-    padLen = max(len(x.id) for x in searchResults)
+    padLen = max(len(x.id) for x in chain(*searchResults))
     s = ""
-    for soundtrack in searchResults:
-        s += "{} {}. {}\n".format(soundtrack.id, '.' * (padLen - len(soundtrack.id)), soundtrack.name)
+    hasPreviousList = False
+    for heading, soundtracks in zip(("Album title results:", "Song name results:"), searchResults):
+        if soundtracks:
+            if hasPreviousList:
+                s += "\n"
+            s += heading + "\n"
+            for soundtrack in soundtracks:
+                s += "{} {}. {}\n".format(soundtrack.id, '.' * (padLen - len(soundtrack.id)), soundtrack.name)
+            hasPreviousList = True
     unicodePrint(s, end="", file=file)
 
 # --- And now for the execution. ---
@@ -597,7 +619,7 @@ if __name__ == '__main__':
                 else:
                     if searchResults:
                         print("Soundtracks found (to download, "
-                              "run \"{} soundtrack-name\"):".format(SCRIPT_NAME))
+                              "run \"{} soundtrack-name\")!\n".format(SCRIPT_NAME))
                         printSearchResults(searchResults)
                     else:
                         print("No soundtracks found.")
