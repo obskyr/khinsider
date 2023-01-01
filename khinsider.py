@@ -328,7 +328,6 @@ class Soundtrack(object):
         anchors = [a for a in table('a') if a.find('img')]
         urls = [a['href'] for a in anchors]
         images = [File(urljoin(self.url, url)) for url in urls]
-        print(images)
         return images
 
     def download(self, path='', makeDirs=True, formatOrder=None, verbose=False):
