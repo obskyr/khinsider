@@ -299,7 +299,7 @@ class Soundtrack(object):
 
     @lazyProperty
     def name(self):
-        return self._contentSoup.find('h2').get_text(strip=True)
+        return next(self._contentSoup.find('h2').stripped_strings)
 
     @lazyProperty
     def availableFormats(self):
