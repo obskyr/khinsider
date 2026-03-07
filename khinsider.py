@@ -122,6 +122,12 @@ if __name__ == '__main__':
 import requests
 from bs4 import BeautifulSoup
 
+DEFAULT_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+
+_session = requests.Session()
+_session.headers.update({'User-Agent': os.environ.get('SCRAPER_USER_AGENT', DEFAULT_UA)})
+requests.get = _session.get
+
 BASE_URL = 'https://downloads.khinsider.com/'
 
 # Although some of these are valid on Linux, keeping this the same
